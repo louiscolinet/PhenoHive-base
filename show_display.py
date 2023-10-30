@@ -80,12 +80,15 @@ def show_cal_menu(disp, WIDTH, HEIGHT, raw_weight, tare):
     disp.display(img)
 
 
-def show_collecting_data(disp, WIDTH, HEIGHT):
+def show_collecting_data(disp, WIDTH, HEIGHT, status):
     img = Image.new('RGB', (WIDTH, HEIGHT), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
     #Menu
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
-    draw.text((5, 80), "Collecting data...", font=font, fill=(0, 0, 0))
+    draw.text((5, 85), "Collecting data...", font=font, fill=(0, 0, 0))
+    if status != "":
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 8)
+        draw.text((5, 100), status, font=font, fill=(0, 0, 0))
     logo = show_logo(disp, WIDTH, HEIGHT)
     img.paste(logo, (0, 0))
     disp.display(img)
