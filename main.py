@@ -1,6 +1,6 @@
-'''
+"""
 Script python qui récupère les images et les mesures de poids et les envoies à la base de données influxDB
-'''
+"""
 import subprocess
 import time
 import datetime
@@ -43,9 +43,11 @@ def scan_wifi():
     # If no wifi available, check if 'wlan0' device is up
     if wifi_list == '':
         process = subprocess.run(['nmcli', 'dev', 'show', 'wlan0'], stdout=subprocess.PIPE)
-        process = subprocess.run(['nmcli', 'dev', 'wifi'], stdout=subprocess.PIPE)
         wifi_list = process.stdout.decode('utf-8').strip()
         debug_print(f"nmcli dev show wlan0 result : {wifi_list}")
+        process = subprocess.run(['nmcli', 'dev', 'wifi'], stdout=subprocess.PIPE)
+        wifi_list = process.stdout.decode('utf-8').strip()
+        debug_print(f"nmcli dev wifi : {wifi_list}")
     return wifi_list
 
 
@@ -61,7 +63,8 @@ def connect_to(ssid: str, password: str):
 
 
 def init():
-    global LED, token, org, bucket, url, path, pot_limit, channel, kernel_size, fill_size, cam, client, disp, WIDTH, HEIGHT, but_left, but_right, hx, time_interval, load_cell_cal, tare, ID_station, parser
+    global LED, token, org, bucket, url, path, pot_limit, channel, kernel_size, fill_size, cam, client, disp, WIDTH, \
+        HEIGHT, but_left, but_right, hx, time_interval, load_cell_cal, tare, ID_station, parser
     # Parse Config.ini file
     parser = configparser.ConfigParser()
     parser.read('config.ini')
@@ -130,7 +133,7 @@ def photo(path, preview=False, time_to_wait=8):
     cam.start_preview(Preview.NULL)
     cam.start()
     time.sleep(time_to_wait)
-    if preview == False:
+    if not preview:
         name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     else:
         name = "img"
@@ -163,7 +166,6 @@ def get_weight():
 
 def measurement_pipeline():
     global load_cell_cal
-    time_now = datetime.datetime.now()
     # Get photo
     debug_print("Starting measurement pipeline")
     show_collecting_data(disp, WIDTH, HEIGHT, "Starting measurement pipeline")
@@ -246,26 +248,26 @@ def main():
         show_menu(disp, WIDTH, HEIGHT)
         try:
             # Main menu loop
-            if gpio.input(but_left) == False:
+            if not gpio.input(but_left):
                 debug_print("Configuration menu loop")
                 # Configuration Menu loop
                 show_cal_prev_menu(disp, WIDTH, HEIGHT)
                 time.sleep(1)
                 while True:
 
-                    if gpio.input(but_right) == False:
+                    if not gpio.input(but_right):
                         # Preview loop
                         while True:
                             path_img = photo(path, preview=True, time_to_wait=1)
                             show_image(disp, WIDTH, HEIGHT, path_img)
 
-                            if gpio.input(but_right) == False:
+                            if not gpio.input(but_right):
                                 # Go back to the main menu
                                 break
                         time.sleep(1)
                         break
 
-                    if gpio.input(but_left) == False:
+                    if not gpio.input(but_left):
                         # Calibration loop
                         global tare, load_cell_cal
 
@@ -274,7 +276,7 @@ def main():
                         raw_weight = 0
                         while True:
                             show_cal_menu(disp, WIDTH, HEIGHT, raw_weight, tare)
-                            if gpio.input(but_left) == False:
+                            if not gpio.input(but_left):
                                 # Get measurement
                                 raw_weight = get_weight()
                                 load_cell_cal = 1500 / (raw_weight - tare)
@@ -282,13 +284,13 @@ def main():
                                 with open("config.ini", 'w') as configfile:
                                     parser.write(configfile)
 
-                            if gpio.input(but_right) == False:
+                            if not gpio.input(but_right):
                                 # Go back to the main menu
                                 break
                         time.sleep(1)
                         break
 
-            if gpio.input(but_right) == False or is_shutdown == 1:
+            if not gpio.input(but_right) or is_shutdown == 1:
                 parser['Var_Verif']["is_shutdown"] = str(1)
                 with open("config.ini", 'w') as configfile:
                     parser.write(configfile)
@@ -315,7 +317,7 @@ def main():
                         show_collecting_data(disp, WIDTH, HEIGHT, "")
                         growth_value, weight = measurement_pipeline()
 
-                    if gpio.input(but_right) == False:
+                    if not gpio.input(but_right):
                         debug_print("Right button pressed, going back to the main menu")
                         parser['Var_Verif']["is_shutdown"] = str(0)
                         with open("config.ini", 'w') as configfile:
