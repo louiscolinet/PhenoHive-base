@@ -1,10 +1,12 @@
 """
 Script python qui récupère les images et les mesures de poids et les envoies à la base de données influxDB
 """
+import base64
 import subprocess
 import time
 import datetime
 import RPi.GPIO as gpio
+import hx711
 from picamera2 import Picamera2, Preview
 from image_processing import get_height_pix, get_total_length
 import configparser
@@ -21,45 +23,33 @@ from show_display import show_image, show_logo, show_measuring_menu, show_menu, 
     show_collecting_data
 
 
+class DebugHx711(HX711):
+    def __init__(self, dout_pin, pd_sck_pin):
+        super().__init__(dout_pin, pd_sck_pin)
+
+    def _read(self, times=10):
+        # Custom read function to debug (times=10 to reduce the time of the measurement)
+        return super()._read(times)
+
+    def get_raw_data(self, times=5):
+        # Custom read function to debug (with a max of 100 tries)
+        start = time.time()
+        data_list = []
+        count = 0
+        while len(data_list) < times and count < 1000:
+            data = self._read()
+            if data not in [False, -1]:
+                data_list.append(data)
+            count += 1
+        debug_print(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
+        return data_list
+
+
 def debug_print(*args):
     now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open("logs.txt", "a") as f:
         for arg in args:
             f.write(f"{now} - " + str(arg) + "\n")
-
-
-def what_wifi():
-    process = subprocess.run(['nmcli', '-t', '-f', 'ACTIVE,SSID', 'dev', 'wifi'], stdout=subprocess.PIPE)
-    if process.returncode == 0:
-        return process.stdout.decode('utf-8').strip().split(':')[1]
-    else:
-        return process.stdout.decode('utf-8').strip()
-
-
-def scan_wifi():
-    process = subprocess.run(['nmcli', '-t', '-f', 'SSID,SECURITY,SIGNAL', 'dev', 'wifi'], stdout=subprocess.PIPE)
-    wifi_list = process.stdout.decode('utf-8').strip()
-    debug_print(f"Wifi list : {wifi_list}")
-    # If no wifi available, check if 'wlan0' device is up
-    if wifi_list == '':
-        process = subprocess.run(['nmcli', 'dev', 'show', 'wlan0'], stdout=subprocess.PIPE)
-        wifi_list = process.stdout.decode('utf-8').strip()
-        debug_print(f"nmcli dev show wlan0 result : {wifi_list}")
-        process = subprocess.run(['nmcli', 'dev', 'wifi'], stdout=subprocess.PIPE)
-        wifi_list = process.stdout.decode('utf-8').strip()
-        debug_print(f"nmcli dev wifi : {wifi_list}")
-    return wifi_list
-
-
-def is_wifi_available(ssid: str):
-    return ssid in [x.split(':')[0] for x in scan_wifi()]
-
-
-def connect_to(ssid: str, password: str):
-    if not is_wifi_available(ssid):
-        return False
-    subprocess.call(['nmcli', 'd', 'wifi', 'connect', ssid, 'password', password])
-    return what_wifi() == ssid
 
 
 def init():
@@ -83,19 +73,12 @@ def init():
     fill_size = int(parser["image_arg"]["fill_size"])
 
     time_interval = int(parser["time_interval"]["time_interval"])
-    debug_print(f"Confing file read : {parser}")
 
     # InfluxDB client initialization
     client = InfluxDBClient(url=url, token=token, org=org)
-    debug_print(f"InfluxDB client initialized with url : {url}, org : {org} and token : {token}",
-                f"InfluxDB state : {client.ping()}")
+    debug_print(f"InfluxDB client initialized with url : {url}, org : {org} and token : {token}"
+                f", Ping returned : {client.ping()}")
 
-    # Hx711
-    hx = HX711(dout_pin=5, pd_sck_pin=6)
-
-    # Load cell calibration coefficient
-    load_cell_cal = float(parser["cal_coef"]["load_cell_cal"])
-    tare = float(parser["cal_coef"]["tare"])
 
     # Screen initialization
     WIDTH = 128
@@ -113,6 +96,29 @@ def init():
             SPI_PORT,
             SPI_DEVICE,
             max_speed_hz=SPEED_HZ))
+    disp.clear()
+    disp.begin()
+    show_image(disp, WIDTH, HEIGHT, "/home/pi/Desktop/phenostation/assets/logo_elia.jpg")
+
+    # Hx711
+    # hx = HX711(dout_pin=5, pd_sck_pin=6)
+    hx = DebugHx711(dout_pin=5, pd_sck_pin=6)
+    try:
+        debug_print("Resetting HX711")
+        hx.reset()
+    except hx711.GenericHX711Exception as e:
+        debug_print(f"Error while resetting HX711 : {e}")
+    else:
+        debug_print("HX711 ready to use")
+    # raw = hx.get_raw_data()
+    # if raw:
+    #     debug_print(f"Raw data : {raw")
+    # else:
+    #     debug_print("Error while getting raw data")
+
+    # Load cell calibration coefficient
+    load_cell_cal = float(parser["cal_coef"]["load_cell_cal"])
+    tare = float(parser["cal_coef"]["tare"])
 
     # Camera and LED init
     cam = Picamera2()
@@ -146,22 +152,49 @@ def photo(path, preview=False, time_to_wait=8):
 
 
 def send_to_db(client, bucket, point, field, value):
-    # Save data to a csv file in case of connection error
-    with open("data.csv", "a") as f:
-        now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        f.write(f"{now},{point},{field},{value}\n")
-    write_api = client.write_api(write_options=SYNCHRONOUS)
-    debug_print(f"Sending data to the DB : {point} {field} {value}")
-    p = Point(point).field(field, int(value))
-    # p = Point(point).field(field, int(value))
-    debug_print(f"Point created : {p}")
-    write_api.write(bucket=bucket, record=p)
-    debug_print("Data sent to the DB")
+    if not client.ping():
+        # Save data to a csv file in case of connection error
+        # now = datetime.datetime.now().strftime("%Y-%m-%d")
+        # with open(f"{now}_data.csv", "a") as f:
+        with open(f"data.csv", "a") as f:
+            now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            f.write(f"{now},{point},{field},{value}\n")
+    else:
+        # Send data to the DB
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        debug_print(f"Sending data to the DB : {point} {field}")  # {value}")
+        if point == "Picture":
+            debug_print("Picture")
+            p = Point(point).field(field, value)
+        else:
+            p = Point(point).field(field, int(value))
+        # p.field(time, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        write_api.write(bucket=bucket, record=p)
 
 
 def get_weight():
-    raw_weight = sum(hx.get_raw_data()) / 5
+    raw_data = hx.get_raw_data()
+    if not raw_data:
+        debug_print("Error while getting raw data (no data)")
+        return -1
+    raw_weight = sum(raw_data) / len(raw_data)
     return raw_weight
+
+
+def take_photo():
+    # Take photo
+    gpio.output(LED, gpio.LOW)
+    path_img = photo(path, preview=False, time_to_wait=6)
+    time.sleep(2)
+    gpio.output(LED, gpio.HIGH)
+    # Display photo
+    debug_print(f"Photo taken and saved at {path_img}")
+    show_image(disp, WIDTH, HEIGHT, path_img)
+    # Convert image to base64
+    with open(path_img, "rb") as image_file:
+        pic = base64.b64encode(image_file.read()).decode('utf-8')
+    time.sleep(2)
+    return pic, path_img
 
 
 def measurement_pipeline():
@@ -172,14 +205,9 @@ def measurement_pipeline():
     time.sleep(1)
     try:
         show_collecting_data(disp, WIDTH, HEIGHT, "Taking photo")
-        gpio.output(LED, gpio.LOW)
-        path_img = photo(path, preview=False, time_to_wait=6)
-        time.sleep(2)
-        gpio.output(LED, gpio.HIGH)
-        print(path_img)
-        debug_print(f"Photo taken and saved at {path_img}")
+        pic, path_img = take_photo()
         show_collecting_data(disp, WIDTH, HEIGHT, "Processing photo")
-        time.sleep(2)
+        time.sleep(1)
     except Exception as e:
         debug_print(f"Error while taking the photo: {e}")
         show_collecting_data(disp, WIDTH, HEIGHT, "Error while taking the photo")
@@ -189,7 +217,7 @@ def measurement_pipeline():
     try:
         growth_value = get_total_length(image_path=path_img, channel=channel, kernel_size=kernel_size)
         debug_print(f"Growth value : {growth_value}")
-        show_collecting_data(disp, WIDTH, HEIGHT, f"Growth value : {growth_value}")
+        show_collecting_data(disp, WIDTH, HEIGHT, f"Growth value : {round(growth_value, 2)}")
         time.sleep(2)
     except Exception as e:
         debug_print(f"Error while processing the photo: {e}")
@@ -202,7 +230,7 @@ def measurement_pipeline():
         weight = get_weight() - tare
         weight = weight * load_cell_cal
         debug_print(f"Weight : {weight}")
-        show_collecting_data(disp, WIDTH, HEIGHT, f"Weight : \n{weight}")
+        show_collecting_data(disp, WIDTH, HEIGHT, f"Weight : {round(weight, 2)}")
         time.sleep(2)
     except Exception as e:
         debug_print(f"Error while getting the weight: {e}")
@@ -216,6 +244,7 @@ def measurement_pipeline():
         debug_print(f"Sending data to the DB with field ID : {field_ID}")
         send_to_db(client, bucket, "Growth", field_ID, growth_value)
         send_to_db(client, bucket, "Weight", field_ID, weight)
+        send_to_db(client, bucket, "Picture", field_ID, pic)  # Send picture in base64
         debug_print("Data sent to the DB, measurement pipeline finished")
         show_collecting_data(disp, WIDTH, HEIGHT, "Data sent to the DB")
         time.sleep(2)
@@ -232,16 +261,8 @@ def measurement_pipeline():
 
 def main():
     debug_print("---Initializing---")
-    interface = subprocess.run(['iwconfig'], stdout=subprocess.PIPE)
-    res = connect_to("accesspoint", "0123456789")
-    debug_print(f"Wireless interface : {interface.stdout.decode('utf-8').strip()}",
-                f"Connection to 'accesspoint' result : {res}",
-                f"Current wifi : {what_wifi()}",
-                f"Available wifi : {scan_wifi()}")
     init()
-    disp.clear()
-    disp.begin()
-    show_image(disp, WIDTH, HEIGHT, "/home/pi/Desktop/phenostation/assets/logo_elia.jpg")
+    n_round = 0
 
     while True:
         is_shutdown = int(parser['Var_Verif']["is_shutdown"])
@@ -307,15 +328,17 @@ def main():
                     # Get time
                     time_now = datetime.datetime.now()
                     # Showing measurement
-                    show_measuring_menu(disp, WIDTH, HEIGHT, str(weight), str(growth_value),
-                                        str(time_now.strftime("%Y/%m/%d %H:%M:%S")),
-                                        str(time_nxt_measure.strftime("%H:%M:%S")))
+                    show_measuring_menu(disp, WIDTH, HEIGHT, round(weight, 2), round(growth_value, 2),
+                                        time_now.strftime("%Y/%m/%d %H:%M:%S"),
+                                        time_nxt_measure.strftime("%H:%M:%S"),
+                                        n_round)
 
                     if time_now >= time_nxt_measure:
                         debug_print("Measuring time reached, starting measurement")
-                        time_nxt_measure = time_now + time_delta
                         show_collecting_data(disp, WIDTH, HEIGHT, "")
                         growth_value, weight = measurement_pipeline()
+                        time_nxt_measure = datetime.datetime.now() + time_delta # Update next measurement time
+                        n_round += 1
 
                     if not gpio.input(but_right):
                         debug_print("Right button pressed, going back to the main menu")
