@@ -49,7 +49,7 @@ def main():
                             if not gpio.input(Station.but_left):
                                 # Get measurement
                                 raw_weight = Station.get_weight()
-                                Station. = 1500 / (raw_weight - Station.tare)
+                                Station.load_cell_cal = 1500 / (raw_weight - Station.tare)
                                 Station.parser['cal_coef']["load_cell_cal"] = str(Station.load_cell_cal)
                                 with open("config.ini", 'w') as configfile:
                                     Station.parser.write(configfile)

@@ -1,5 +1,6 @@
 import base64
 import configparser
+import os
 import time
 import datetime
 import Adafruit_GPIO.SPI as SPI
@@ -38,6 +39,7 @@ class Phenostation:
     time_interval = None
     load_cell_cal = None
     tare = None
+    connected = False  # True if the station is connected to influxDB
 
     # Station constants
     WIDTH = 128
@@ -76,10 +78,12 @@ class Phenostation:
 
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
+        self.connected = self.client.ping()
         debug_print(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}"
-                    f", Ping returned : {self.client.ping()}")
+                    f", Ping returned : {self.connected}")
 
         # Screen initialization
+        debug_print("Initializing screen")
         self.disp = TFT.ST7735(
             self.DC,
             rst=self.RST,
@@ -152,9 +156,12 @@ class Phenostation:
         :param field: String, name of the field (ex: StationID_1)
         :param value: value of the field, must be a type supported by InfluxDB (int, float, string, boolean)
         """
-        if not self.client.ping():
-            # Save data to a csv file in case of connection error
-            with open(f"data.csv", "a") as f:
+        if not self.connected:
+            self.connected = self.reconnect()
+
+        if not self.connected:
+            # Save data to the corresponding csv file in case of connection error (create file if it doesn't exist)
+            with open(f"data/{point}.csv", "a+") as f:
                 now = time.time_ns()  # Influx DB timestamps are in nanoseconds Unix time
                 f.write(f"{now},{point},{field},{value}\n")
         else:
@@ -167,6 +174,32 @@ class Phenostation:
             else:
                 p = Point(point).field(field, int(value))
             write_api.write(bucket=self.bucket, record=p)
+
+    def reconnect(self):
+        """
+        Try to reconnect to the InfluxDB
+        :return: True if the connection is successful, False otherwise
+                 If the connection is successful, the data saved in the csv files are sent to the DB
+        """
+        ping = self.client.ping()
+        if ping:
+            for file in os.listdir("data/"):
+                if file.endswith(".csv"):
+                    with open(f"data/{file}", "r") as f:
+                        lines = f.readlines()
+                        for line in lines:
+                            line = line.split(",")
+                            timestamp = line[0]
+                            point = line[1]
+                            field = line[2]
+                            value = line[3]
+                            write_api = self.client.write_api(write_options=SYNCHRONOUS)
+                            write_api.write(bucket=self.bucket, record=Point(point).field(field, int(value)),
+                                            time=timestamp)
+                    os.remove(f"data/{file}")
+            return True
+        else:
+            return False
 
     def get_weight(self):
         """
