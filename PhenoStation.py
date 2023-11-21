@@ -171,7 +171,10 @@ class Phenostation:
         else:
             # Send data to the DB
             write_api = self.client.write_api(write_options=SYNCHRONOUS)
-            debug_print(f"Sending data to the DB : {point} {value}")
+            if point == "Picture":
+                debug_print(f"Sending data to the DB : {point}")
+            else:
+                debug_print(f"Sending data to the DB : {point}: {value}")
             if point == "Picture":
                 p = Point(point).field(field, value)
             else:
