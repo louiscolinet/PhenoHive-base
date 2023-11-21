@@ -162,6 +162,9 @@ class Phenostation:
         """
         if not self.connected:
             self.connected = self.reconnect()
+        else:
+            # Check if the connection is still alive
+            self.connected = self.client.ping()
 
         if not self.connected:
             # Save data to the corresponding csv file in case of connection error (create file if it doesn't exist)
