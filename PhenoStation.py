@@ -259,16 +259,19 @@ class Phenostation:
             time.sleep(5)
             return 0, 0
         # Get numerical value from the photo
-        try:
-            growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
-            debug_print(f"Growth value : {growth_value}")
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Growth value : {round(growth_value, 2)}")
-            time.sleep(2)
-        except Exception as e:
-            debug_print(f"Error while processing the photo: {e}")
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while processing the photo")
-            time.sleep(5)
-            return 0, 0
+        if pic != "" and path_img != "":
+            try:
+                growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
+                debug_print(f"Growth value : {growth_value}")
+                show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Growth value : {round(growth_value, 2)}")
+                time.sleep(2)
+            except Exception as e:
+                debug_print(f"Error while processing the photo: {e}")
+                show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while processing the photo")
+                time.sleep(5)
+                return 0, 0
+        else:
+            growth_value = -1
         # Get weight
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Getting weight")
