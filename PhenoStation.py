@@ -144,7 +144,11 @@ class Phenostation:
             name = "img"
 
         path_img = self.path + "/%s.jpg" % name
-        self.cam.capture_file(path_img)
+        try:
+            self.cam.capture_file(file_output=path_img)
+        except Exception as e:
+            debug_print(f"Error while capturing the photo: {e}")
+            path_img = ""
         self.cam.stop_preview()
         self.cam.stop()
         return path_img
@@ -224,13 +228,16 @@ class Phenostation:
         time.sleep(2)
         gpio.output(self.LED, gpio.HIGH)
         # Display photo
-        debug_print(f"Photo taken and saved at {path_img}")
-        show_image(self.disp, self.WIDTH, self.HEIGHT, path_img)
-        # Convert image to base64
-        with open(path_img, "rb") as image_file:
-            pic = base64.b64encode(image_file.read()).decode('utf-8')
-        time.sleep(2)
-        return pic, path_img
+        if path_img != "":
+            debug_print(f"Photo taken and saved at {path_img}")
+            show_image(self.disp, self.WIDTH, self.HEIGHT, path_img)
+            # Convert image to base64
+            with open(path_img, "rb") as image_file:
+                pic = base64.b64encode(image_file.read()).decode('utf-8')
+            time.sleep(2)
+            return pic, path_img
+        else:
+            return "", ""
 
     def measurement_pipeline(self):
         """
