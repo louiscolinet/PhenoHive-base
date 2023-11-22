@@ -203,8 +203,12 @@ class Phenostation:
                             field = line[2]
                             value = line[3]
                             write_api = self.client.write_api(write_options=SYNCHRONOUS)
-                            write_api.write(bucket=self.bucket, record=Point(point).field(field, int(value)),
-                                            time=timestamp)
+                            if point == "Picture":
+                                write_api.write(bucket=self.bucket, record=Point(point).field(field, value),
+                                                time=timestamp)
+                            else:
+                                write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
+                                                time=timestamp)
                     os.remove(f"data/{file}")
             return True
         else:
