@@ -197,7 +197,7 @@ class Phenostation:
                     with open(f"data/{file}", "r") as f:
                         lines = f.readlines()
                         for line in lines:
-                            line = line.split(",")
+                            line = line.strip().split(",")
                             timestamp = line[0]
                             point = line[1]
                             field = line[2]
