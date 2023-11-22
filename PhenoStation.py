@@ -160,11 +160,7 @@ class Phenostation:
         :param field: String, name of the field (ex: StationID_1)
         :param value: value of the field, must be a type supported by InfluxDB (int, float, string, boolean)
         """
-        if not self.connected:
-            self.connected = self.reconnect()
-        else:
-            # Check if the connection is still alive
-            self.connected = self.client.ping()
+        self.connected = self.reconnect()
 
         if not self.connected:
             # Save data to the corresponding csv file in case of connection error (create file if it doesn't exist)
@@ -186,7 +182,7 @@ class Phenostation:
 
     def reconnect(self):
         """
-        Try to reconnect to the InfluxDB
+        Try to reconnect to the InfluxDB and send the data saved in the csv files
         :return: True if the connection is successful, False otherwise
                  If the connection is successful, the data saved in the csv files are sent to the DB
         """
@@ -196,6 +192,7 @@ class Phenostation:
                 if file.endswith(".csv"):
                     with open(f"data/{file}", "r") as f:
                         lines = f.readlines()
+                        debug_print(f"Sending {len(lines)} data from {file} to the DB")
                         for line in lines:
                             line = line.strip().split(",")
                             timestamp = line[0]
