@@ -165,7 +165,7 @@ class Phenostation:
         if not self.connected:
             # Save data to the corresponding csv file in case of connection error (create file if it doesn't exist)
             with open(f"data/{point}.csv", "a+") as f:
-                now = time.time_ns()  # Influx DB timestamps are in nanoseconds Unix time
+                now = datetime.datetime.now()  # Influx DB timestamps are in nanoseconds Unix time
                 f.write(f"{now},{point},{field},{value}\n")
         else:
             # Send data to the DB
