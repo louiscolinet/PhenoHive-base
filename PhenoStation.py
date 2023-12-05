@@ -98,7 +98,7 @@ class Phenostation:
         show_image(self.disp, self.WIDTH, self.HEIGHT, "assets/logo_elia.jpg")
 
         # Hx711
-        # hx = HX711(dout_pin=5, pd_sck_pin=6)
+        # hx711 = HX711(dout_pin=5, pd_sck_pin=6)
         self.hx = DebugHx711(dout_pin=5, pd_sck_pin=6)
         try:
             debug_print("Resetting HX711")
@@ -107,7 +107,7 @@ class Phenostation:
             debug_print(f"Error while resetting HX711 : {e}")
         else:
             debug_print("HX711 ready to use")
-        # raw = hx.get_raw_data()
+        # raw = hx711.get_raw_data()
         # if raw:
         #     debug_print(f"Raw data : {raw")
         # else:
