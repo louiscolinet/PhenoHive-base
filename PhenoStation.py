@@ -22,7 +22,7 @@ class Phenostation:
 
     # Station variables
     parser = None
-    ID_station = None
+    station_id = None
     token = None
     org = None
     bucket = None
@@ -66,7 +66,7 @@ class Phenostation:
         self.bucket = str(self.parser["InfluxDB"]["bucket"])
         self.url = str(self.parser["InfluxDB"]["url"])
 
-        self.ID_station = str(self.parser["ID_station"]["ID"])
+        self.station_id = str(self.parser["ID_station"]["ID"])
         self.path = str(self.parser["Path_to_save_img"]["absolute_path"])
 
         self.pot_limit = int(self.parser["image_arg"]["pot_limit"])
@@ -206,7 +206,10 @@ class Phenostation:
                             else:
                                 write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
                                                 time=timestamp)
-                    os.remove(f"data/{file}")
+                    # os.remove(f"data/{file}")
+                    # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
+                    new_name = f"data/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+                    os.rename(f"data/{file}", f"{new_name}")
             return True
         else:
             return False
@@ -294,7 +297,7 @@ class Phenostation:
         # Send data to the DB
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Sending data to the DB")
-            field_ID = "StationID_%s" % self.ID_station
+            field_ID = "StationID_%s" % self.station_id
             debug_print(f"Sending data to the DB with field ID : {field_ID}")
             self.send_to_db("Growth", field_ID, growth_value)
             self.send_to_db("Weight", field_ID, weight)
