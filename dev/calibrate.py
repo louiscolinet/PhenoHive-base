@@ -20,7 +20,7 @@ def get_weight(hx):
 def measure_and_filter(hx, k):
     print("Measuring with the new calibration coefficient")
     weight_list = []
-    for i in range(int(n)):
+    for _ in range(int(k)):
         weight = get_weight(hx711) - tare
         print(f"Weight: {weight}")
         weight_list.append(weight)

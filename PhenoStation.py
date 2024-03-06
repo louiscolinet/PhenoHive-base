@@ -6,7 +6,7 @@ import datetime
 import Adafruit_GPIO.SPI as SPI
 import ST7735 as TFT
 import hx711
-import RPi.GPIO as gpio
+import RPi.GPIO as GPIO
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
@@ -119,14 +119,14 @@ class Phenostation:
 
         # Camera and LED init
         self.cam = Picamera2()
-        gpio.setwarnings(False)
+        GPIO.setwarnings(False)
 
-        gpio.setup(self.LED, gpio.OUT)
-        gpio.output(self.LED, gpio.HIGH)
+        GPIO.setup(self.LED, GPIO.OUT)
+        GPIO.output(self.LED, GPIO.HIGH)
 
         # Button init
-        gpio.setup(self.but_left, gpio.IN, pull_up_down=gpio.PUD_UP)
-        gpio.setup(self.but_right, gpio.IN, pull_up_down=gpio.PUD_UP)
+        GPIO.setup(self.but_left, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.but_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def photo(self, preview=False, time_to_wait=8):
         """
@@ -232,10 +232,10 @@ class Phenostation:
         :return: a tuple with the photo in base64 and the path to the photo
         """
         # Take photo
-        gpio.output(self.LED, gpio.LOW)
+        GPIO.output(self.LED, GPIO.LOW)
         path_img = self.photo(preview=False, time_to_wait=6)
         time.sleep(2)
-        gpio.output(self.LED, gpio.HIGH)
+        GPIO.output(self.LED, GPIO.HIGH)
         # Display photo
         if path_img != "":
             debug_print(f"Photo taken and saved at {path_img}")
@@ -297,11 +297,11 @@ class Phenostation:
         # Send data to the DB
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Sending data to the DB")
-            field_ID = "StationID_%s" % self.station_id
-            debug_print(f"Sending data to the DB with field ID : {field_ID}")
-            self.send_to_db("Growth", field_ID, growth_value)
-            self.send_to_db("Weight", field_ID, weight)
-            self.send_to_db("Picture", field_ID, pic)  # Send picture in base64
+            field_id = "StationID_%s" % self.station_id
+            debug_print(f"Sending data to the DB with field ID : {field_id}")
+            self.send_to_db("Growth", field_id, growth_value)
+            self.send_to_db("Weight", field_id, weight)
+            self.send_to_db("Picture", field_id, pic)  # Send picture in base64
             debug_print("Data sent to the DB, measurement pipeline finished")
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Data sent to the DB")
             time.sleep(2)
