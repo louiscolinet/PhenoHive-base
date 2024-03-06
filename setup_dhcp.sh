@@ -8,7 +8,7 @@ then
 fi
 
 # Check arguments
-if [[ "${#}" -ne 1 ]]
+if [[ "${#}" -ne 2 ]]
 then
   echo "Usage: ${0} <station_id> <password>" >&2
   exit 1
@@ -38,7 +38,7 @@ sudo mv /etc/default/hostapd /etc/default/hostapd.orig
 echo "Editing the dnsmasq configuration file"
 sudo cat > /etc/dnsmasq.conf <<EOF
 interface=wlan0
-dhcp-range=192.168.4.2,.192.168.4.100,255.255.255.0,24h
+dhcp-range=192.168.4.2,192.168.4.100,255.255.255.0,24h
 EOF
 
 # Edit the hostapd configuration file
@@ -76,7 +76,7 @@ EOF
 echo "Starting the services"
 sudo service dhcpcd restart
 sudo service hostapd start
-sudo sytemctl enable hostapd$
+sudo sytemctl enable hostapd
 
 # Enable routing
 echo "Enabling routing"
