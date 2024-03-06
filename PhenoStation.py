@@ -284,9 +284,27 @@ class Phenostation:
         # Get weight
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Getting weight")
-            weight = self.get_weight() - self.tare
-            weight = weight * self.load_cell_cal
+            # Start the measurement
+            weight_list = []
+            for _ in range(int(10)):
+                weight = self.get_weight() - self.tare
+                weight_list.append(weight)
+
+            # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
+            # This is done to avoid the noise and abnormal values from the load cell
+            weight_list.sort()
+            q1 = weight_list[int(len(weight_list) / 4)]
+            q3 = weight_list[int(3 * len(weight_list) / 4)]
+            iqr = q3 - q1
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
+
+            # Compute the average weight from the filtered list
+            weight = sum(weight_list) / len(weight_list)
             debug_print(f"Weight : {weight}")
+
+            # Measurement finished, display the weight
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Weight : {round(weight, 2)}")
             time.sleep(2)
         except Exception as e:
