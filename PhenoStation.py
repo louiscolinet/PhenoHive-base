@@ -98,7 +98,6 @@ class Phenostation:
         show_image(self.disp, self.WIDTH, self.HEIGHT, "assets/logo_elia.jpg")
 
         # Hx711
-        # hx711 = HX711(dout_pin=5, pd_sck_pin=6)
         self.hx = DebugHx711(dout_pin=5, pd_sck_pin=6)
         try:
             debug_print("Resetting HX711")
@@ -208,7 +207,7 @@ class Phenostation:
                                                 time=timestamp)
                     # os.remove(f"data/{file}")
                     # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
-                    new_name = f"data/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+                    new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
                     os.rename(f"data/{file}", f"{new_name}")
             return True
         else:
