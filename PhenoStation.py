@@ -50,8 +50,11 @@ class Phenostation:
     SPI_PORT = 0
     SPI_DEVICE = 0
     LED = 23
-    but_left = 21
-    but_right = 16
+    BUT_LEFT = 21
+    BUT_RIGHT = 16
+    HUMIDITY = 18
+    MOISTURE_AO = 14
+    MOISTURE_DO = 15
 
     def __init__(self):
         """
@@ -106,11 +109,6 @@ class Phenostation:
             debug_print(f"Error while resetting HX711 : {e}")
         else:
             debug_print("HX711 ready to use")
-        # raw = hx711.get_raw_data()
-        # if raw:
-        #     debug_print(f"Raw data : {raw")
-        # else:
-        #     debug_print("Error while getting raw data")
 
         # Load cell calibration coefficient
         self.load_cell_cal = float(self.parser["cal_coef"]["load_cell_cal"])
@@ -124,8 +122,8 @@ class Phenostation:
         GPIO.output(self.LED, GPIO.HIGH)
 
         # Button init
-        GPIO.setup(self.but_left, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.but_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def photo(self, preview=False, time_to_wait=8):
         """
@@ -186,32 +184,31 @@ class Phenostation:
                  If the connection is successful, the data saved in the csv files are sent to the DB
         """
         ping = self.client.ping()
-        if ping:
-            for file in os.listdir("data/"):
-                if file.endswith(".csv"):
-                    with open(f"data/{file}", "r") as f:
-                        lines = f.readlines()
-                        debug_print(f"Sending {len(lines)} data from {file} to the DB")
-                        for line in lines:
-                            line = line.strip().split(",")
-                            timestamp = line[0]
-                            point = line[1]
-                            field = line[2]
-                            value = line[3]
-                            write_api = self.client.write_api(write_options=SYNCHRONOUS)
-                            if point == "Picture":
-                                write_api.write(bucket=self.bucket, record=Point(point).field(field, value),
-                                                time=timestamp)
-                            else:
-                                write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
-                                                time=timestamp)
-                    # os.remove(f"data/{file}")
-                    # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
-                    new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
-                    os.rename(f"data/{file}", f"{new_name}")
-            return True
-        else:
+        if not ping:
             return False
+        for file in os.listdir("data/"):
+            if file.endswith(".csv"):
+                with open(f"data/{file}", "r") as f:
+                    lines = f.readlines()
+                    debug_print(f"Sending {len(lines)} data from {file} to the DB")
+                    for line in lines:
+                        line = line.strip().split(",")
+                        timestamp = line[0]
+                        point = line[1]
+                        field = line[2]
+                        value = line[3]
+                        write_api = self.client.write_api(write_options=SYNCHRONOUS)
+                        if point == "Picture":
+                            write_api.write(bucket=self.bucket, record=Point(point).field(field, value),
+                                            time=timestamp)
+                        else:
+                            write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
+                                            time=timestamp)
+                # os.remove(f"data/{file}")
+                # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
+                new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+                os.rename(f"data/{file}", f"{new_name}")
+        return True
 
     def get_weight(self):
         """
