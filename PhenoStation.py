@@ -4,6 +4,7 @@ import os
 import time
 import datetime
 import Adafruit_GPIO.SPI as SPI
+import adafruit_dht
 import ST7735 as TFT
 import hx711
 import RPi.GPIO as GPIO
@@ -32,14 +33,16 @@ class Phenostation:
     channel = None
     kernel_size = None
     fill_size = None
-    cam = None
+    cam = None  # picamera2
     client = None
     disp = None
-    hx = None
+    hx = None  # hx711 controller
     time_interval = None
     load_cell_cal = None
     tare = None
     connected = False  # True if the station is connected to influxDB
+    dht11 = None  # Humidity sensor
+    moisture_sensor = None  # Soil moisture sensor
 
     # Station constants
     WIDTH = 128
@@ -124,6 +127,9 @@ class Phenostation:
         # Button init
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        # DHT11 init
+        self.dht11 = adafruit_dht.DHT11()
 
     def photo(self, preview=False, time_to_wait=8):
         """
@@ -244,6 +250,41 @@ class Phenostation:
         else:
             return "", ""
 
+    def collect_weight(self):
+        """
+        Collect the weight from the load cell
+        Two different measurements are returned:
+        - A raw value, which is the first value collected from the load cell
+        - A filtered value, which is the average of the values collected from the load cell, after removing the outliers
+          between 10 different measurements
+        :return: A tuple (raw_value, filtered_value)
+        """
+        # Start the measurement
+        weight_list = []
+        raw_value = None
+        for _ in range(int(10)):
+            weight = self.get_weight() - self.tare
+            if raw_value is None:
+                # The first measurement is the raw value
+                raw_value = weight
+            weight_list.append(weight)
+
+        # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
+        # This is done to avoid the noise and abnormal values from the load cell
+        weight_list.sort()
+        q1 = weight_list[int(len(weight_list) / 4)]
+        q3 = weight_list[int(3 * len(weight_list) / 4)]
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
+
+        # Compute the average weight from the filtered list
+        filtered_value = sum(weight_list) / len(weight_list)
+
+        # Return both values
+        return raw_value, filtered_value
+
     def measurement_pipeline(self):
         """
         Measurement pipeline
@@ -280,25 +321,8 @@ class Phenostation:
         # Get weight
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Getting weight")
-            # Start the measurement
-            weight_list = []
-            for _ in range(int(10)):
-                weight = self.get_weight() - self.tare
-                weight_list.append(weight)
-
-            # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
-            # This is done to avoid the noise and abnormal values from the load cell
-            weight_list.sort()
-            q1 = weight_list[int(len(weight_list) / 4)]
-            q3 = weight_list[int(3 * len(weight_list) / 4)]
-            iqr = q3 - q1
-            lower_bound = q1 - 1.5 * iqr
-            upper_bound = q3 + 1.5 * iqr
-            weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
-
-            # Compute the average weight from the filtered list
-            weight = sum(weight_list) / len(weight_list)
-            debug_print(f"Weight : {weight}")
+            raw_weight, weight = self.collect_weight()
+            debug_print(f"Raw weight : {raw_weight}, Filtered weight : {weight}")
 
             # Measurement finished, display the weight
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Weight : {round(weight, 2)}")
@@ -316,6 +340,13 @@ class Phenostation:
             self.send_to_db("Growth", field_id, growth_value)
             self.send_to_db("Weight", field_id, weight)
             self.send_to_db("Picture", field_id, pic)  # Send picture in base64
+
+            # Modification of the 10/03/2024
+            # Keep both the raw and filtered weight value in a special csv file
+            with open("data/comparison_weight.csv", "a+") as f:
+                now = datetime.datetime.now()
+                f.write(f"{now},{field_id},{raw_weight},{weight}\n")
+
             debug_print("Data sent to the DB, measurement pipeline finished")
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Data sent to the DB")
             time.sleep(2)

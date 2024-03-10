@@ -15,6 +15,7 @@ CONFIG_FILE = "config.ini"
 def main():
     """
     Main function, initialize the station and start the main loop
+    TODO: this main function has a too high cognitive complexity, it should be refactored (10/03/2024: complexity=58)
     """
     debug_print("---Initializing---")
     station = PhenoStation.Phenostation()  # Initialize the station
