@@ -4,6 +4,7 @@ import os
 import time
 import datetime
 import Adafruit_GPIO.SPI as SPI
+import board
 import adafruit_dht
 import ST7735 as TFT
 import hx711
@@ -55,7 +56,7 @@ class Phenostation:
     LED = 23
     BUT_LEFT = 21
     BUT_RIGHT = 16
-    HUMIDITY = 18
+    HUMIDITY = 18  # DHT11, pin 12 (GPIO18)
     MOISTURE_AO = 14
     MOISTURE_DO = 15
 
@@ -129,7 +130,14 @@ class Phenostation:
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         # DHT11 init
-        self.dht11 = adafruit_dht.DHT11()
+        self.dht11 = adafruit_dht.DHT11(board.D18)
+
+        # DHT11 test
+        debug_print("#####DHT11 test#####")
+        temperature = self.dht11.temperature
+        humidity = self.dht11.humidity
+        debug_print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
+        debug_print("####################")
 
     def photo(self, preview=False, time_to_wait=8):
         """
