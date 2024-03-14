@@ -4,8 +4,6 @@ import os
 import time
 import datetime
 import Adafruit_GPIO.SPI as SPI
-import board
-import adafruit_dht
 import ST7735 as TFT
 import hx711
 import RPi.GPIO as GPIO
@@ -42,8 +40,6 @@ class Phenostation:
     load_cell_cal = None
     tare = None
     connected = False  # True if the station is connected to influxDB
-    dht11 = None  # Humidity sensor
-    moisture_sensor = None  # Soil moisture sensor
 
     # Station constants
     WIDTH = 128
@@ -56,9 +52,6 @@ class Phenostation:
     LED = 23
     BUT_LEFT = 21
     BUT_RIGHT = 16
-    HUMIDITY = 18  # DHT11, pin 12 (GPIO18)
-    MOISTURE_AO = 14
-    MOISTURE_DO = 15
 
     def __init__(self):
         """
@@ -129,16 +122,7 @@ class Phenostation:
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        # DHT11 init
-        self.dht11 = adafruit_dht.DHT11(board.D18)
-
-        # DHT11 test
-        debug_print("#####DHT11 test#####")
-        temperature = self.dht11.temperature
-        humidity = self.dht11.humidity
-        debug_print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
-        debug_print("####################")
-
+    def photo(self, preview: bool = False, time_to_wait: int = 8) -> str:
     def photo(self, preview=False, time_to_wait=8):
         """
         Take a photo and save it
