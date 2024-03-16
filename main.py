@@ -1,10 +1,10 @@
 """
 Script python qui récupère les images et les mesures de poids et les envoie à la base de données influxDB
 """
-import PhenoStation
+from PhenoStation import PhenoStation
 from show_display import show_image, show_measuring_menu, show_menu, show_cal_prev_menu, show_cal_menu, \
     show_collecting_data
-from utils import debug_print
+from utils import LOGGER
 import time
 import datetime
 import RPi.GPIO as GPIO
@@ -17,8 +17,8 @@ def main():
     Main function, initialize the station and start the main loop
     TODO: this main function has a too high cognitive complexity, it should be refactored (10/03/2024: complexity=58)
     """
-    debug_print("---Initializing---")
-    station = PhenoStation.Phenostation()  # Initialize the station
+    LOGGER.info("Initializing the station")
+    station = PhenoStation()  # Initialize the station
     n_round = 0
 
     while True:
@@ -27,7 +27,7 @@ def main():
         try:
             # Main menu loop
             if not GPIO.input(station.BUT_LEFT):
-                debug_print("Configuration menu loop")
+                LOGGER.info("Left button pressed, going to the configuration menu")
                 # Configuration Menu loop
                 show_cal_prev_menu(station.disp, station.WIDTH, station.HEIGHT)
                 time.sleep(1)
@@ -73,7 +73,7 @@ def main():
 
                 time.sleep(1)
                 # Measuring loop
-                debug_print("Measuring loop")
+                LOGGER.info("Measuring loop")
                 growth_value = 0
                 weight = 0
                 time_delta = datetime.timedelta(seconds=station.time_interval)
@@ -89,7 +89,7 @@ def main():
 
                     if time_now >= time_nxt_measure:
                         # If time to measure reached, start measurement
-                        debug_print("Measuring time reached, starting measurement")
+                        LOGGER.info("Measuring time reached, starting measurement")
                         show_collecting_data(station.disp, station.WIDTH, station.HEIGHT, "")
                         growth_value, weight = station.measurement_pipeline()
                         time_nxt_measure = datetime.datetime.now() + time_delta  # Update next measurement time
@@ -97,14 +97,15 @@ def main():
 
                     if not GPIO.input(station.BUT_RIGHT):
                         # If right button pressed, go back to the main menu
-                        debug_print("Right button pressed, going back to the main menu")
+                        LOGGER.info("Right button pressed, going back to the main menu")
                         station.parser['Var_Verif']["is_shutdown"] = str(0)
                         with open(CONFIG_FILE, 'w') as configfile:
                             station.parser.write(configfile)
                         break
                 time.sleep(1)
         except Exception as e:
-            debug_print(f"Error : {e}")
+            # This is a broad catch, it should be refactored to catch only the exceptions that are expected
+            LOGGER.error(f"Error : {e}")
             time.sleep(5)
 
 
