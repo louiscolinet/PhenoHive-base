@@ -29,9 +29,9 @@ def save_to_csv(data: list, filename: str) -> None:
     :param filename: name of the csv file
     """
     with open(filename, "a+") as f:
-        for d in data:
-            f.write(str(d) + ",")
-        f.write("\n")
+        for d in data[:-1]:
+            f.write(f"{d},")
+        f.write(f"{data[-1]}\n")
 
 
 LOGGER = setup_logger("PhenoStation")
