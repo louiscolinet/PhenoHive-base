@@ -471,7 +471,7 @@ class DebugHx711(hx711.HX711):
 
     def get_raw_data(self, times=5):
         # Custom read function to debug (with a max of 100 tries)
-        start = time.time()
+        # start = time.time()
         data_list = []
         count = 0
         while len(data_list) < times and count < 1000:
@@ -479,5 +479,5 @@ class DebugHx711(hx711.HX711):
             if data not in [False, -1]:
                 data_list.append(data)
             count += 1
-        LOGGER.debug(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
+        # LOGGER.debug(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
         return data_list
