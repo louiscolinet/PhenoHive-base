@@ -313,14 +313,15 @@ class PhenoStation:
         time.sleep(1)
 
         # Take and process photo
-        try:
-            self.disp.show_collecting_data("Taking photo")
-            pic, growth_value = self.picture_pipeline()
-        except Exception as e:
-            LOGGER.error(f"Error while taking the photo: {e}")
-            self.disp.show_collecting_data("Error while taking the photo")
-            time.sleep(5)
-            return 0, 0
+        # Disabled (18/03/2024) to focus on weight collection
+        # try:
+        #     self.disp.show_collecting_data("Taking photo")
+        #     pic, growth_value = "", 0  # self.picture_pipeline()
+        # except Exception as e:
+        #     LOGGER.error(f"Error while taking the photo: {e}")
+        #     self.disp.show_collecting_data("Error while taking the photo")
+        #     time.sleep(5)
+        #     return 0, 0
 
         # Get weight
         try:
@@ -337,22 +338,24 @@ class PhenoStation:
             return 0, 0
 
         # Send data to the DB
-        try:
-            self.disp.show_collecting_data("Sending data to the DB")
-            self.database_pipeline(growth_value, weight, pic)
-            LOGGER.debug("Data sent to the DB")
-            self.disp.show_collecting_data("Data sent to the DB")
-            time.sleep(2)
-        except Exception as e:
-            LOGGER.error(f"Error while sending data to the DB: {e}")
-            self.disp.show_collecting_data("Error while sending data to the DB")
-            time.sleep(5)
-            return 0, 0
+        # Disabled (18/03/2024) to focus on weight collection (data is saved to a csv, no need for the DB
+        # try:
+        #     self.disp.show_collecting_data("Sending data to the DB")
+        #     self.database_pipeline(growth_value, weight, pic)
+        #     LOGGER.debug("Data sent to the DB")
+        #     self.disp.show_collecting_data("Data sent to the DB")
+        #     time.sleep(2)
+        # except Exception as e:
+        #     LOGGER.error(f"Error while sending data to the DB: {e}")
+        #     self.disp.show_collecting_data("Error while sending data to the DB")
+        #     time.sleep(5)
+        #     return 0, 0
 
         LOGGER.info("Measurement pipeline finished")
         self.disp.show_collecting_data("Measurement pipeline finished")
         time.sleep(1)
-        return growth_value, weight
+        # return growth_value, weight
+        return 0, weight
 
     def picture_pipeline(self) -> tuple[str, int]:
         """
