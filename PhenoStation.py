@@ -12,7 +12,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
 from image_processing import get_total_length
 from utils import LOGGER, save_to_csv
-from show_display import show_image, show_collecting_data
+from show_display import Display
 
 
 class PhenoStation:
@@ -33,7 +33,8 @@ class PhenoStation:
     fill_size = None
     cam = None  # picamera2
     client = None
-    disp = None
+    st7735 = None  # ST7735 display (device)
+    disp = None  # ST7735 display (object)
     hx = None  # hx711 controller
     time_interval = None
     load_cell_cal = None
@@ -85,7 +86,7 @@ class PhenoStation:
 
         # Screen initialization
         LOGGER.debug("Initializing screen")
-        self.disp = TFT.ST7735(
+        self.st7735 = TFT.ST7735(
             self.DC,
             rst=self.RST,
             spi=SPI.SpiDev(
@@ -94,9 +95,8 @@ class PhenoStation:
                 max_speed_hz=self.SPEED_HZ
             )
         )
-        self.disp.clear()
-        self.disp.begin()
-        show_image(self.disp, self.WIDTH, self.HEIGHT, "assets/logo_elia.jpg")
+        self.disp = Display(self.st7735, self.WIDTH, self.HEIGHT)
+        self.disp.show_image("assets/logo_elia.jpg")
 
         # Hx711
         self.hx = DebugHx711(dout_pin=5, pd_sck_pin=6)
@@ -127,31 +127,6 @@ class PhenoStation:
         if not os.path.exists(self.WEIGHT_FILE):
             save_to_csv(["raw_weight", "avg_10", "avg_100", "avg_1000", "flt_10", "flt_100", "flt_1000"],
                         self.WEIGHT_FILE)
-
-    def photo(self, preview: bool = False, time_to_wait: int = 8) -> str:
-        """
-        Take a photo and save it
-        :param preview: if True, the photo will be saved as "img.jpg"
-        :param time_to_wait: time to wait before taking the photo
-        :return: the path to the photo
-        """
-        self.cam.start_preview(Preview.NULL)
-        self.cam.start()
-        time.sleep(time_to_wait)
-        if not preview:
-            name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        else:
-            name = "img"
-
-        path_img = self.path + "/%s.jpg" % name
-        try:
-            self.cam.capture_file(file_output=path_img)
-        except Exception as e:
-            LOGGER.error(f"Error while capturing the photo: {e}")
-            path_img = ""
-        self.cam.stop_preview()
-        self.cam.stop()
-        return path_img
 
     def send_to_db(self, point: str, field: str, value) -> None:
         """
@@ -223,20 +198,20 @@ class PhenoStation:
         raw_weight = sum(raw_data) / len(raw_data)
         return raw_weight
 
-    def take_photo(self) -> tuple[str, str]:
+    def capture_and_display(self) -> tuple[str, str]:
         """
-        Take a photo and display it on the screen, and return it in base64
+        Take a photo, display it on the screen and return it in base64
         :return: a tuple with the photo in base64 and the path to the photo
         """
         # Take photo
         GPIO.output(self.LED, GPIO.LOW)
-        path_img = self.photo(preview=False, time_to_wait=6)
+        path_img = self.save_photo(preview=False, time_to_wait=6)
         time.sleep(2)
         GPIO.output(self.LED, GPIO.HIGH)
         # Display photo
         if path_img != "":
             LOGGER.debug(f"Photo taken and saved at {path_img}")
-            show_image(self.disp, self.WIDTH, self.HEIGHT, path_img)
+            self.disp.show_image(path_img)
             # Convert image to base64
             with open(path_img, "rb") as image_file:
                 pic = base64.b64encode(image_file.read()).decode('utf-8')
@@ -244,6 +219,31 @@ class PhenoStation:
             return pic, path_img
         else:
             return "", ""
+
+    def save_photo(self, preview: bool = False, time_to_wait: int = 8) -> str:
+        """
+        Take a photo and save it
+        :param preview: if True, the photo will be saved as "img.jpg" (used for the display)
+        :param time_to_wait: time to wait before taking the photo (in seconds)
+        :return: the path to the photo
+        """
+        self.cam.start_preview(Preview.NULL)
+        self.cam.start()
+        time.sleep(time_to_wait)
+        if not preview:
+            name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        else:
+            name = "img"
+
+        path_img = self.path + "/%s.jpg" % name
+        try:
+            self.cam.capture_file(file_output=path_img)
+        except Exception as e:
+            LOGGER.error(f"Error while capturing the photo: {e}")
+            path_img = ""
+        self.cam.stop_preview()
+        self.cam.stop()
+        return path_img
 
     def collect_weight_average(self, n: int = 1) -> float:
         """
@@ -310,16 +310,16 @@ class PhenoStation:
         """
         # Get photo
         LOGGER.info("Starting measurement pipeline")
-        show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Starting measurement pipeline")
+        self.disp.show_collecting_data("Starting measurement pipeline")
         time.sleep(1)
         try:
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Taking photo")
-            pic, path_img = self.take_photo()
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Processing photo")
+            self.disp.show_collecting_data("Taking photo")
+            pic, path_img = self.capture_and_display()
+            self.disp.show_collecting_data("Processing photo")
             time.sleep(1)
         except Exception as e:
             LOGGER.error(f"Error while taking the photo: {e}")
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while taking the photo")
+            self.disp.show_collecting_data("Error while taking the photo")
             time.sleep(5)
             return 0, 0
         # Get numerical value from the photo
@@ -327,18 +327,18 @@ class PhenoStation:
             try:
                 growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
                 LOGGER.debug(f"Growth value : {growth_value}")
-                show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Growth value : {round(growth_value, 2)}")
+                self.disp.show_collecting_data(f"Growth value : {round(growth_value, 2)}")
                 time.sleep(2)
             except Exception as e:
                 LOGGER.error(f"Error while processing the photo: {e}")
-                show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while processing the photo")
+                self.disp.show_collecting_data("Error while processing the photo")
                 time.sleep(5)
                 return 0, 0
         else:
             growth_value = -1
         # Get weight
         try:
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Getting weight")
+            self.disp.show_collecting_data("Getting weight")
             weight = self.collect_weight_average(1)
             weight_avg_10 = self.collect_weight_average(10)
             weight_avg_100 = self.collect_weight_average(100)
@@ -350,16 +350,16 @@ class PhenoStation:
                          f"{weight_flt_100}, {weight_flt_1000}")
 
             # Measurement finished, display the weight
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Weight : {round(weight, 2)}")
+            self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
             time.sleep(2)
         except Exception as e:
             LOGGER.error(f"Error while getting the weight: {e}")
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while getting the weight")
+            self.disp.show_collecting_data("Error while getting the weight")
             time.sleep(5)
             return 0, 0
         # Send data to the DB
         try:
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Sending data to the DB")
+            self.disp.show_collecting_data("Sending data to the DB")
             field_id = "StationID_%s" % self.station_id
             LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
             self.send_to_db("Growth", field_id, growth_value)
@@ -372,15 +372,15 @@ class PhenoStation:
                          str(weight_flt_100), str(weight_flt_1000)], "data/weight_values.csv")
 
             LOGGER.debug("Data sent to the DB")
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Data sent to the DB")
+            self.disp.show_collecting_data("Data sent to the DB")
             time.sleep(2)
         except Exception as e:
             LOGGER.error(f"Error while sending data to the DB: {e}")
-            show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while sending data to the DB")
+            self.disp.show_collecting_data("Error while sending data to the DB")
             time.sleep(5)
             return 0, 0
         LOGGER.info("Measurement pipeline finished")
-        show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Measurement pipeline finished")
+        self.disp.show_collecting_data("Measurement pipeline finished")
         time.sleep(1)
         return growth_value, weight
 
