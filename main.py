@@ -3,8 +3,6 @@ Main file to run the station
 This script starts the main loop of the station, and handles the different menus and measurements
 """
 from PhenoStation import PhenoStation
-from show_display import show_image, show_measuring_menu, show_menu, show_cal_prev_menu, show_cal_menu, \
-    show_collecting_data
 from utils import LOGGER
 import time
 import datetime
@@ -23,7 +21,7 @@ def main() -> None:
 
     while True:
         is_shutdown = bool(station.parser['Var_Verif']["is_shutdown"])
-        show_menu(station.disp, station.WIDTH, station.HEIGHT)
+        station.disp.show_menu()
         try:
             handle_button_presses(station, is_shutdown, n_round)
         except Exception as e:
@@ -40,7 +38,7 @@ def handle_button_presses(station: PhenoStation, is_shutdown: bool, n_round: int
     """
     if not GPIO.input(station.BUT_LEFT):
         LOGGER.info("Left button pressed, going to the configuration menu")
-        show_cal_prev_menu(station.disp, station.WIDTH, station.HEIGHT)
+        station.disp.show_cal_prev_menu()
         time.sleep(1)
         handle_configuration_menu(station)
 
@@ -75,8 +73,8 @@ def handle_preview_loop(station: PhenoStation) -> None:
     :param station: station object
     """
     while True:
-        path_img = station.photo(preview=True, time_to_wait=1)
-        show_image(station.disp, station.WIDTH, station.HEIGHT, path_img)
+        path_img = station.save_photo(preview=True, time_to_wait=1)
+        station.disp.show_image(path_img)
         if not GPIO.input(station.BUT_RIGHT):
             break
 
@@ -90,7 +88,7 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     station.parser['cal_coef']["tare"] = str(station.tare)
     raw_weight = 0
     while True:
-        show_cal_menu(station.disp, station.WIDTH, station.HEIGHT, raw_weight, station.tare)
+        station.disp.show_cal_menu(raw_weight, station.tare)
         if not GPIO.input(station.BUT_LEFT):
             raw_weight = station.get_weight()
             station.load_cell_cal = 1500 / (raw_weight - station.tare)
@@ -115,13 +113,13 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
     time_nxt_measure = time_now + time_delta
     while True:
         time_now = datetime.datetime.now()
-        show_measuring_menu(station.disp, station.WIDTH, station.HEIGHT, round(weight, 2),
-                            round(growth_value, 2), time_now.strftime("%Y/%m/%d %H:%M:%S"),
-                            time_nxt_measure.strftime("%H:%M:%S"), n_round)
+        station.disp.show_measuring_menu(round(weight, 2), round(growth_value, 2),
+                                         time_now.strftime("%Y/%m/%d %H:%M:%S"),
+                                         time_nxt_measure.strftime("%H:%M:%S"), n_round)
 
         if time_now >= time_nxt_measure:
             LOGGER.info("Measuring time reached, starting measurement")
-            show_collecting_data(station.disp, station.WIDTH, station.HEIGHT, "")
+            station.disp.show_collecting_data("")
             growth_value, weight = station.measurement_pipeline()
             time_nxt_measure = datetime.datetime.now() + time_delta
             n_round += 1
