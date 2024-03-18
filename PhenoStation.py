@@ -303,51 +303,29 @@ class PhenoStation:
         # Return the filtered value
         return filtered_value
 
-    def measurement_pipeline(self):
+    def measurement_pipeline(self) -> tuple[int, float]:
         """
         Measurement pipeline
         :return: a tuple with the growth value and the weight
         """
-        # Get photo
         LOGGER.info("Starting measurement pipeline")
         self.disp.show_collecting_data("Starting measurement pipeline")
         time.sleep(1)
+
+        # Take and process photo
         try:
             self.disp.show_collecting_data("Taking photo")
-            pic, path_img = self.capture_and_display()
-            self.disp.show_collecting_data("Processing photo")
-            time.sleep(1)
+            pic, growth_value = self.picture_pipeline()
         except Exception as e:
             LOGGER.error(f"Error while taking the photo: {e}")
             self.disp.show_collecting_data("Error while taking the photo")
             time.sleep(5)
             return 0, 0
-        # Get numerical value from the photo
-        if pic != "" and path_img != "":
-            try:
-                growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
-                LOGGER.debug(f"Growth value : {growth_value}")
-                self.disp.show_collecting_data(f"Growth value : {round(growth_value, 2)}")
-                time.sleep(2)
-            except Exception as e:
-                LOGGER.error(f"Error while processing the photo: {e}")
-                self.disp.show_collecting_data("Error while processing the photo")
-                time.sleep(5)
-                return 0, 0
-        else:
-            growth_value = -1
+
         # Get weight
         try:
             self.disp.show_collecting_data("Getting weight")
-            weight = self.collect_weight_average(1)
-            weight_avg_10 = self.collect_weight_average(10)
-            weight_avg_100 = self.collect_weight_average(100)
-            weight_avg_1000 = self.collect_weight_average(1000)
-            weight_flt_10 = self.collect_weight_percentile(10)
-            weight_flt_100 = self.collect_weight_percentile(100)
-            weight_flt_1000 = self.collect_weight_percentile(1000)
-            LOGGER.debug(f"Weight : {weight}, {weight_avg_10}, {weight_avg_100}, {weight_avg_1000}, {weight_flt_10}, " +
-                         f"{weight_flt_100}, {weight_flt_1000}")
+            weight = self.weight_pipeline()
 
             # Measurement finished, display the weight
             self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
@@ -357,20 +335,11 @@ class PhenoStation:
             self.disp.show_collecting_data("Error while getting the weight")
             time.sleep(5)
             return 0, 0
+
         # Send data to the DB
         try:
             self.disp.show_collecting_data("Sending data to the DB")
-            field_id = "StationID_%s" % self.station_id
-            LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
-            self.send_to_db("Growth", field_id, growth_value)
-            self.send_to_db("Weight", field_id, weight)
-            self.send_to_db("Picture", field_id, pic)  # Send picture in base64
-
-            # Modification of the 16/03/2024
-            # Keep the different weight values in a csv file
-            save_to_csv([str(weight), str(weight_avg_10), str(weight_avg_100), str(weight_avg_1000), str(weight_flt_10),
-                         str(weight_flt_100), str(weight_flt_1000)], "data/weight_values.csv")
-
+            self.database_pipeline(growth_value, weight, pic)
             LOGGER.debug("Data sent to the DB")
             self.disp.show_collecting_data("Data sent to the DB")
             time.sleep(2)
@@ -379,10 +348,60 @@ class PhenoStation:
             self.disp.show_collecting_data("Error while sending data to the DB")
             time.sleep(5)
             return 0, 0
+
         LOGGER.info("Measurement pipeline finished")
         self.disp.show_collecting_data("Measurement pipeline finished")
         time.sleep(1)
         return growth_value, weight
+
+    def picture_pipeline(self) -> tuple[str, int]:
+        """
+        Picture processing pipeline
+        :return: the picture and the growth value
+        """
+        # Take and display the photo
+        pic, path_img = self.capture_and_display()
+        self.disp.show_collecting_data("Processing photo")
+        time.sleep(1)
+        # Process the segment lengths to get the growth value
+        growth_value = -1
+        if pic != "" and path_img != "":
+            growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
+            LOGGER.debug(f"Growth value : {growth_value}")
+            self.disp.show_collecting_data(f"Growth value : {round(growth_value, 2)}")
+            time.sleep(2)
+        return pic, growth_value
+
+    def weight_pipeline(self):
+        """
+        Weight collection pipeline
+        :return: the weight of the plant
+        """
+        weight = self.collect_weight_average(1)
+        weight_avg_10 = self.collect_weight_average(10)
+        weight_avg_100 = self.collect_weight_average(100)
+        weight_avg_1000 = self.collect_weight_average(1000)
+        weight_flt_10 = self.collect_weight_percentile(10)
+        weight_flt_100 = self.collect_weight_percentile(100)
+        weight_flt_1000 = self.collect_weight_percentile(1000)
+        LOGGER.debug(f"Weight : {weight}, {weight_avg_10}, {weight_avg_100}, {weight_avg_1000}, {weight_flt_10}, " +
+                     f"{weight_flt_100}, {weight_flt_1000}")
+
+        # Modification of the 16/03/2024
+        # Keep the different weight values in a csv file
+        save_to_csv([str(weight), str(weight_avg_10), str(weight_avg_100), str(weight_avg_1000), str(weight_flt_10),
+                     str(weight_flt_100), str(weight_flt_1000)], "data/weight_values.csv")
+        return weight
+
+    def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
+        """
+        Send the collected data to the database
+        """
+        field_id = "StationID_%s" % self.station_id
+        LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
+        self.send_to_db("Growth", field_id, growth_value)
+        self.send_to_db("Weight", field_id, weight)
+        self.send_to_db("Picture", field_id, pic)  # Send picture in base64
 
 
 class DebugHx711(hx711.HX711):
