@@ -125,7 +125,7 @@ class PhenoStation:
 
         # Create the weight_values.csv file if it doesn't exist
         if not os.path.exists(self.WEIGHT_FILE):
-            save_to_csv([
+            save_to_csv(["date",
                 "raw_weight", "time_raw_weight",
                 "avg_10", "time_avg_10",
                 "avg_100", "time_avg_100",
@@ -386,7 +386,7 @@ class PhenoStation:
         Weight collection pipeline
         :return: the weight of the plant
         """
-        collected = []
+        collected = [datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")]
 
         self.disp.show_collecting_data("Getting weight (1)")
         start = time.time()
