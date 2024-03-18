@@ -20,7 +20,7 @@ def main() -> None:
     n_round = 0
 
     while True:
-        is_shutdown = bool(station.parser['Var_Verif']["is_shutdown"])
+        is_shutdown = int(station.parser['Var_Verif']["is_shutdown"])
         station.disp.show_menu()
         try:
             handle_button_presses(station, is_shutdown, n_round)
@@ -29,7 +29,7 @@ def main() -> None:
             time.sleep(5)
 
 
-def handle_button_presses(station: PhenoStation, is_shutdown: bool, n_round: int) -> None:
+def handle_button_presses(station: PhenoStation, is_shutdown: int, n_round: int) -> None:
     """
     Function to handle the button presses
     :param station: station object
@@ -43,7 +43,7 @@ def handle_button_presses(station: PhenoStation, is_shutdown: bool, n_round: int
         handle_configuration_menu(station)
 
     if not GPIO.input(station.BUT_RIGHT) or is_shutdown:
-        station.parser['Var_Verif']["is_shutdown"] = True
+        station.parser['Var_Verif']["is_shutdown"] = str(1)
         with open(CONFIG_FILE, 'w') as configfile:
             station.parser.write(configfile)
         time.sleep(1)
@@ -125,7 +125,7 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
             n_round += 1
 
         if not GPIO.input(station.BUT_RIGHT):
-            station.parser['Var_Verif']["is_shutdown"] = False
+            station.parser['Var_Verif']["is_shutdown"] = str(0)
             with open(CONFIG_FILE, 'w') as configfile:
                 station.parser.write(configfile)
             break
