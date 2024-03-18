@@ -30,7 +30,7 @@ def save_to_csv(data: list, filename: str) -> None:
     """
     with open(filename, "a+") as f:
         for d in data:
-            f.write(d + ",")
+            f.write(str(d) + ",")
         f.write("\n")
 
 

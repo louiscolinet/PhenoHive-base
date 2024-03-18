@@ -125,7 +125,14 @@ class PhenoStation:
 
         # Create the weight_values.csv file if it doesn't exist
         if not os.path.exists(self.WEIGHT_FILE):
-            save_to_csv(["raw_weight", "avg_10", "avg_100", "avg_1000", "flt_10", "flt_100", "flt_1000"],
+            save_to_csv([
+                "raw_weight", "time_raw_weight",
+                "avg_10", "time_avg_10",
+                "avg_100", "time_avg_100",
+                "avg_1000", "time_avg_1000",
+                "flt_10", "time_flt_10",
+                "flt_100", "time_flt_100",
+                "flt_1000", "time_flt_1000"],
                         self.WEIGHT_FILE)
 
     def send_to_db(self, point: str, field: str, value) -> None:
@@ -325,7 +332,6 @@ class PhenoStation:
 
         # Get weight
         try:
-            self.disp.show_collecting_data("Getting weight")
             weight = self.weight_pipeline()
 
             # Measurement finished, display the weight
@@ -380,20 +386,64 @@ class PhenoStation:
         Weight collection pipeline
         :return: the weight of the plant
         """
+        collected = []
+
+        self.disp.show_collecting_data("Getting weight (1)")
+        start = time.time()
         weight = self.collect_weight_average(1)
+        elp_1 = time.time() - start
+        collected.append(weight)
+        collected.append(elp_1)
+
+        self.disp.show_collecting_data("Getting weight (avg, 10)")
+        start = time.time()
         weight_avg_10 = self.collect_weight_average(10)
+        elp_avg_10 = time.time() - start
+        collected.append(weight_avg_10)
+        collected.append(elp_avg_10)
+
+        self.disp.show_collecting_data("Getting weight (avg, 100)")
+        start = time.time()
         weight_avg_100 = self.collect_weight_average(100)
+        elp_avg_100 = time.time() - start
+        collected.append(weight_avg_100)
+        collected.append(elp_avg_100)
+
+        self.disp.show_collecting_data("Getting weight (avg, 1000)")
+        start = time.time()
         weight_avg_1000 = self.collect_weight_average(1000)
+        elp_avg_1000 = time.time() - start
+        collected.append(weight_avg_1000)
+        collected.append(elp_avg_1000)
+
+        self.disp.show_collecting_data("Getting weight (per, 10)")
+        start = time.time()
         weight_flt_10 = self.collect_weight_percentile(10)
+        elp_ftl_10 = time.time() - start
+        collected.append(weight_flt_10)
+        collected.append(elp_ftl_10)
+
+        self.disp.show_collecting_data("Getting weight (per, 100)")
+        start = time.time()
         weight_flt_100 = self.collect_weight_percentile(100)
+        elp_ftl_100 = time.time() - start
+        collected.append(weight_flt_100)
+        collected.append(elp_ftl_100)
+
+        self.disp.show_collecting_data("Getting weight (per, 1000)")
+        start = time.time()
         weight_flt_1000 = self.collect_weight_percentile(1000)
-        LOGGER.debug(f"Weight : {weight}, {weight_avg_10}, {weight_avg_100}, {weight_avg_1000}, {weight_flt_10}, " +
-                     f"{weight_flt_100}, {weight_flt_1000}")
+        elp_ftl_1000 = time.time() - start
+        collected.append(weight_flt_1000)
+        collected.append(elp_ftl_1000)
+
+        LOGGER.debug(f"Weight : {weight} in {elp_1}s, {weight_avg_10} in {elp_avg_10}s, {weight_avg_100} in "
+                     f"{elp_avg_100}s, {weight_avg_1000} in {elp_avg_1000}s, {weight_flt_10} in {elp_ftl_10}s, "
+                     f"{weight_flt_100} in {elp_ftl_100}s, {weight_flt_1000} in {elp_ftl_1000}s")
 
         # Modification of the 16/03/2024
         # Keep the different weight values in a csv file
-        save_to_csv([str(weight), str(weight_avg_10), str(weight_avg_100), str(weight_avg_1000), str(weight_flt_10),
-                     str(weight_flt_100), str(weight_flt_1000)], "data/weight_values.csv")
+        save_to_csv(collected, self.WEIGHT_FILE)
         return weight
 
     def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
