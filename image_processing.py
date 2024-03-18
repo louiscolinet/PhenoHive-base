@@ -13,7 +13,7 @@ def get_height_pix(image_path, pot_limit, channel='k', kernel_size=3, fill_size=
     print(path)
     pcv.params.debug = None
 
-    img, path, filename = pcv.readimage(image_path)
+    img, path, _ = pcv.readimage(image_path)
 
     height, width = img.shape[0], img.shape[1]
 
@@ -36,7 +36,7 @@ def get_segment_list(image_path, channel='k', kernel_size=20):
     pcv.params.debug = None
 
     # read image
-    img, path, filename = pcv.readimage(image_path)
+    img, _, _ = pcv.readimage(image_path)
 
     # get image dimension
     height, width = img.shape[0], img.shape[1]
@@ -68,8 +68,11 @@ def get_segment_list(image_path, channel='k', kernel_size=20):
     pcv.params.line_thickness = 3
     skeleton = pcv.morphology.skeletonize(mask=result)
     segmented_img, obj = pcv.morphology.segment_skeleton(skel_img=skeleton)
-    labeled_img = pcv.morphology.segment_path_length(segmented_img=segmented_img,
-                                                     objects=obj, label="default")
+
+    if pcv.params.debug is not None:
+        # The labeled image is only useful for debugging purposes
+        _ = pcv.morphology.segment_path_length(segmented_img=segmented_img,
+                                                         objects=obj, label="default")
     # get segment lengths
     path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
 

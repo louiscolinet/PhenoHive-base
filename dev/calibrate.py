@@ -17,7 +17,7 @@ def get_weight(hx):
     return raw_weight
 
 
-def measure_and_filter(hx, k):
+def measure_and_filter(k):
     print("Measuring with the new calibration coefficient")
     weight_list = []
     for _ in range(int(k)):
@@ -55,7 +55,7 @@ if mode == "y":
     real_weight = input("Enter the real weight (in g): ")
     n = input("Enter the number of loops to average the weight: ")
     print("Weighting")
-    lst = measure_and_filter(hx711, n)
+    lst = measure_and_filter(n)
     coef = float(real_weight) / (sum(lst) / len(lst))
     print(f"Calibration coefficient: {coef}")
     # Save the calibration coefficient in 'coef.txt'
@@ -73,7 +73,7 @@ else:
         if n == "-1":
             exit(0)
         print("Measuring")
-        lst = measure_and_filter(hx711, n)
+        lst = measure_and_filter(n)
         # Calculate the weight in g
         weight = sum(lst) / len(lst) * coef
         print(f"Weight: {weight} g")

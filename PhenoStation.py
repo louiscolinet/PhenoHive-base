@@ -11,15 +11,14 @@ from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
 from image_processing import get_total_length
-from utils import debug_print
+from utils import LOGGER, save_to_csv
 from show_display import show_image, show_collecting_data
 
 
-class Phenostation:
+class PhenoStation:
     """
-    Phenostation class, contains all the variables and functions of the station
+    PhenoStation class, contains all the variables and functions of the station
     """
-
     # Station variables
     parser = None
     station_id = None
@@ -32,10 +31,10 @@ class Phenostation:
     channel = None
     kernel_size = None
     fill_size = None
-    cam = None
+    cam = None  # picamera2
     client = None
     disp = None
-    hx = None
+    hx = None  # hx711 controller
     time_interval = None
     load_cell_cal = None
     tare = None
@@ -50,12 +49,14 @@ class Phenostation:
     SPI_PORT = 0
     SPI_DEVICE = 0
     LED = 23
-    but_left = 21
-    but_right = 16
+    BUT_LEFT = 21
+    BUT_RIGHT = 16
 
-    def __init__(self):
+    WEIGHT_FILE = "data/weight_values.csv"
+
+    def __init__(self) -> None:
         """
-        Initialize the Phenostation
+        Initialize the station
         """
         # Parse Config.ini file
         self.parser = configparser.ConfigParser()
@@ -79,11 +80,11 @@ class Phenostation:
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.connected = self.client.ping()
-        debug_print(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}"
-                    f", Ping returned : {self.connected}")
+        LOGGER.debug(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}" +
+                     f", Ping returned : {self.connected}")
 
         # Screen initialization
-        debug_print("Initializing screen")
+        LOGGER.debug("Initializing screen")
         self.disp = TFT.ST7735(
             self.DC,
             rst=self.RST,
@@ -98,20 +99,14 @@ class Phenostation:
         show_image(self.disp, self.WIDTH, self.HEIGHT, "assets/logo_elia.jpg")
 
         # Hx711
-        # hx711 = HX711(dout_pin=5, pd_sck_pin=6)
         self.hx = DebugHx711(dout_pin=5, pd_sck_pin=6)
         try:
-            debug_print("Resetting HX711")
+            LOGGER.debug("Resetting HX711")
             self.hx.reset()
         except hx711.GenericHX711Exception as e:
-            debug_print(f"Error while resetting HX711 : {e}")
+            LOGGER.error(f"Error while resetting HX711 : {e}")
         else:
-            debug_print("HX711 ready to use")
-        # raw = hx711.get_raw_data()
-        # if raw:
-        #     debug_print(f"Raw data : {raw")
-        # else:
-        #     debug_print("Error while getting raw data")
+            LOGGER.debug("HX711 reset")
 
         # Load cell calibration coefficient
         self.load_cell_cal = float(self.parser["cal_coef"]["load_cell_cal"])
@@ -125,10 +120,15 @@ class Phenostation:
         GPIO.output(self.LED, GPIO.HIGH)
 
         # Button init
-        GPIO.setup(self.but_left, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.but_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    def photo(self, preview=False, time_to_wait=8):
+        # Create the weight_values.csv file if it doesn't exist
+        if not os.path.exists(self.WEIGHT_FILE):
+            save_to_csv(["raw_weight", "avg_10", "avg_100", "avg_1000", "flt_10", "flt_100", "flt_1000"],
+                        self.WEIGHT_FILE)
+
+    def photo(self, preview: bool = False, time_to_wait: int = 8) -> str:
         """
         Take a photo and save it
         :param preview: if True, the photo will be saved as "img.jpg"
@@ -147,13 +147,13 @@ class Phenostation:
         try:
             self.cam.capture_file(file_output=path_img)
         except Exception as e:
-            debug_print(f"Error while capturing the photo: {e}")
+            LOGGER.error(f"Error while capturing the photo: {e}")
             path_img = ""
         self.cam.stop_preview()
         self.cam.stop()
         return path_img
 
-    def send_to_db(self, point, field, value):
+    def send_to_db(self, point: str, field: str, value) -> None:
         """
         Send data to the InfluxDB
         :param point: String, name of the measurement (ex: Growth)
@@ -164,69 +164,66 @@ class Phenostation:
 
         if not self.connected:
             # Save data to the corresponding csv file in case of connection error (create file if it doesn't exist)
+            save_to_csv([point, field, value], f"data/{point}.csv")
             with open(f"data/{point}.csv", "a+") as f:
                 now = datetime.datetime.now()  # Influx DB timestamps are in nanoseconds Unix time
                 f.write(f"{now},{point},{field},{value}\n")
         else:
             # Send data to the DB
             write_api = self.client.write_api(write_options=SYNCHRONOUS)
-            if point == "Picture":
-                debug_print(f"Sending data to the DB : {point}")
-            else:
-                debug_print(f"Sending data to the DB : {point}: {value}")
+            LOGGER.debug(f"Sending data to the DB : {point}: {field} : {str(value)[:12]}")
             if point == "Picture":
                 p = Point(point).field(field, value)
             else:
                 p = Point(point).field(field, int(value))
             write_api.write(bucket=self.bucket, record=p)
 
-    def reconnect(self):
+    def reconnect(self) -> bool:
         """
         Try to reconnect to the InfluxDB and send the data saved in the csv files
         :return: True if the connection is successful, False otherwise
                  If the connection is successful, the data saved in the csv files are sent to the DB
         """
         ping = self.client.ping()
-        if ping:
-            for file in os.listdir("data/"):
-                if file.endswith(".csv"):
-                    with open(f"data/{file}", "r") as f:
-                        lines = f.readlines()
-                        debug_print(f"Sending {len(lines)} data from {file} to the DB")
-                        for line in lines:
-                            line = line.strip().split(",")
-                            timestamp = line[0]
-                            point = line[1]
-                            field = line[2]
-                            value = line[3]
-                            write_api = self.client.write_api(write_options=SYNCHRONOUS)
-                            if point == "Picture":
-                                write_api.write(bucket=self.bucket, record=Point(point).field(field, value),
-                                                time=timestamp)
-                            else:
-                                write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
-                                                time=timestamp)
-                    # os.remove(f"data/{file}")
-                    # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
-                    new_name = f"data/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
-                    os.rename(f"data/{file}", f"{new_name}")
-            return True
-        else:
+        if not ping:
             return False
+        for file in os.listdir("data/"):
+            if file.endswith(".csv"):
+                with open(f"data/{file}", "r") as f:
+                    lines = f.readlines()
+                    LOGGER.debug(f"Sending {len(lines)} data from {file} to the DB")
+                    for line in lines:
+                        line = line.strip().split(",")
+                        timestamp = line[0]
+                        point = line[1]
+                        field = line[2]
+                        value = line[3]
+                        write_api = self.client.write_api(write_options=SYNCHRONOUS)
+                        if point == "Picture":
+                            write_api.write(bucket=self.bucket, record=Point(point).field(field, value),
+                                            time=timestamp)
+                        else:
+                            write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
+                                            time=timestamp)
+                # os.remove(f"data/{file}")
+                # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
+                new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+                os.rename(f"data/{file}", f"{new_name}")
+        return True
 
-    def get_weight(self):
+    def get_weight(self) -> float:
         """
         Get the weight from the load cell
         :return: the weight, or -1 if there is an error
         """
         raw_data = self.hx.get_raw_data()
         if not raw_data:
-            debug_print("Error while getting raw data (no data)")
+            LOGGER.error("Error while getting raw data (no data)")
             return -1
         raw_weight = sum(raw_data) / len(raw_data)
         return raw_weight
 
-    def take_photo(self):
+    def take_photo(self) -> tuple[str, str]:
         """
         Take a photo and display it on the screen, and return it in base64
         :return: a tuple with the photo in base64 and the path to the photo
@@ -238,7 +235,7 @@ class Phenostation:
         GPIO.output(self.LED, GPIO.HIGH)
         # Display photo
         if path_img != "":
-            debug_print(f"Photo taken and saved at {path_img}")
+            LOGGER.debug(f"Photo taken and saved at {path_img}")
             show_image(self.disp, self.WIDTH, self.HEIGHT, path_img)
             # Convert image to base64
             with open(path_img, "rb") as image_file:
@@ -248,13 +245,71 @@ class Phenostation:
         else:
             return "", ""
 
+    def collect_weight_average(self, n: int = 1) -> float:
+        """
+        Collect the weight from the load cell with a filter (if n > 1)
+        The collected weight is the average of the n measurements (50th percentile)
+        :param n: number of measurements to take (default: 1)
+        :type n: int
+        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
+        :rtype: float
+        """
+        # Start the measurement
+        weight_list = []
+
+        for _ in range(n):
+            weight = self.get_weight() - self.tare
+            weight_list.append(weight)
+
+        if n == 1:
+            return weight_list[0]
+
+        # Take the average of the measurements (acts as the 50th percentile)
+        filtered_value = sum(weight_list) / len(weight_list)
+
+        # Return the filtered value
+        return filtered_value
+
+    def collect_weight_percentile(self, n: int = 1) -> float:
+        """
+        Collect the weight from the load cell with a filter (if n > 1)
+        The collected weight is the average of the collected measurements, where only the values between the 25th and
+        75th percentile are kept
+        :param n: number of measurements to take (default: 1)
+        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
+        """
+        # Start the measurement
+        weight_list = []
+        for _ in range(n):
+            weight = self.get_weight() - self.tare
+            weight_list.append(weight)
+
+        if n == 1:
+            return weight_list[0]
+
+        # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
+        # This is done to avoid the noise and abnormal values from the load cell
+        weight_list.sort()
+        q1 = weight_list[int(len(weight_list) / 4)]
+        q3 = weight_list[int(3 * len(weight_list) / 4)]
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
+
+        # Compute the average weight from the filtered list
+        filtered_value = sum(weight_list) / len(weight_list)
+
+        # Return the filtered value
+        return filtered_value
+
     def measurement_pipeline(self):
         """
         Measurement pipeline
         :return: a tuple with the growth value and the weight
         """
         # Get photo
-        debug_print("Starting measurement pipeline")
+        LOGGER.info("Starting measurement pipeline")
         show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Starting measurement pipeline")
         time.sleep(1)
         try:
@@ -263,7 +318,7 @@ class Phenostation:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Processing photo")
             time.sleep(1)
         except Exception as e:
-            debug_print(f"Error while taking the photo: {e}")
+            LOGGER.error(f"Error while taking the photo: {e}")
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while taking the photo")
             time.sleep(5)
             return 0, 0
@@ -271,11 +326,11 @@ class Phenostation:
         if pic != "" and path_img != "":
             try:
                 growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
-                debug_print(f"Growth value : {growth_value}")
+                LOGGER.debug(f"Growth value : {growth_value}")
                 show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Growth value : {round(growth_value, 2)}")
                 time.sleep(2)
             except Exception as e:
-                debug_print(f"Error while processing the photo: {e}")
+                LOGGER.error(f"Error while processing the photo: {e}")
                 show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while processing the photo")
                 time.sleep(5)
                 return 0, 0
@@ -284,31 +339,21 @@ class Phenostation:
         # Get weight
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Getting weight")
-            # Start the measurement
-            weight_list = []
-            for _ in range(int(10)):
-                weight = self.get_weight() - self.tare
-                weight_list.append(weight)
-
-            # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
-            # This is done to avoid the noise and abnormal values from the load cell
-            weight_list.sort()
-            q1 = weight_list[int(len(weight_list) / 4)]
-            q3 = weight_list[int(3 * len(weight_list) / 4)]
-            iqr = q3 - q1
-            lower_bound = q1 - 1.5 * iqr
-            upper_bound = q3 + 1.5 * iqr
-            weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
-
-            # Compute the average weight from the filtered list
-            weight = sum(weight_list) / len(weight_list)
-            debug_print(f"Weight : {weight}")
+            weight = self.collect_weight_average(1)
+            weight_avg_10 = self.collect_weight_average(10)
+            weight_avg_100 = self.collect_weight_average(100)
+            weight_avg_1000 = self.collect_weight_average(1000)
+            weight_flt_10 = self.collect_weight_percentile(10)
+            weight_flt_100 = self.collect_weight_percentile(100)
+            weight_flt_1000 = self.collect_weight_percentile(1000)
+            LOGGER.debug(f"Weight : {weight}, {weight_avg_10}, {weight_avg_100}, {weight_avg_1000}, {weight_flt_10}, " +
+                         f"{weight_flt_100}, {weight_flt_1000}")
 
             # Measurement finished, display the weight
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, f"Weight : {round(weight, 2)}")
             time.sleep(2)
         except Exception as e:
-            debug_print(f"Error while getting the weight: {e}")
+            LOGGER.error(f"Error while getting the weight: {e}")
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while getting the weight")
             time.sleep(5)
             return 0, 0
@@ -316,19 +361,25 @@ class Phenostation:
         try:
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Sending data to the DB")
             field_id = "StationID_%s" % self.station_id
-            debug_print(f"Sending data to the DB with field ID : {field_id}")
+            LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
             self.send_to_db("Growth", field_id, growth_value)
             self.send_to_db("Weight", field_id, weight)
             self.send_to_db("Picture", field_id, pic)  # Send picture in base64
-            debug_print("Data sent to the DB, measurement pipeline finished")
+
+            # Modification of the 16/03/2024
+            # Keep the different weight values in a csv file
+            save_to_csv([str(weight), str(weight_avg_10), str(weight_avg_100), str(weight_avg_1000), str(weight_flt_10),
+                         str(weight_flt_100), str(weight_flt_1000)], "data/weight_values.csv")
+
+            LOGGER.debug("Data sent to the DB")
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Data sent to the DB")
             time.sleep(2)
         except Exception as e:
-            debug_print(f"Error while sending data to the DB: {e}")
+            LOGGER.error(f"Error while sending data to the DB: {e}")
             show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Error while sending data to the DB")
             time.sleep(5)
             return 0, 0
-        debug_print("Measurement pipeline finished")
+        LOGGER.info("Measurement pipeline finished")
         show_collecting_data(self.disp, self.WIDTH, self.HEIGHT, "Measurement pipeline finished")
         time.sleep(1)
         return growth_value, weight
@@ -356,5 +407,5 @@ class DebugHx711(hx711.HX711):
             if data not in [False, -1]:
                 data_list.append(data)
             count += 1
-        debug_print(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
+        LOGGER.debug(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
         return data_list
