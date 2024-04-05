@@ -84,13 +84,15 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     Calibration loop
     :param station: station object
     """
-    station.tare = station.get_weight()
+    # station.tare = station.get_weight()  # Deprecated
+    station.tare = station.collect_weight_percentile(100)
     station.parser['cal_coef']["tare"] = str(station.tare)
     raw_weight = 0
     while True:
         station.disp.show_cal_menu(raw_weight, station.tare)
         if not GPIO.input(station.BUT_LEFT):
             raw_weight = station.get_weight()
+            # TODO: check relevance of 1500 (and more generally of the load_cell_cal parameter)
             station.load_cell_cal = 1500 / (raw_weight - station.tare)
             station.parser['cal_coef']["load_cell_cal"] = str(station.load_cell_cal)
             with open(CONFIG_FILE, 'w') as configfile:
