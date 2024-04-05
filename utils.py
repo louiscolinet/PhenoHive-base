@@ -2,7 +2,7 @@ import datetime
 import logging
 
 
-def setup_logger(name, level=logging.DEBUG):
+def setup_logger(name, level):
     """
     Function to setup the logger
     :param name: name of the logger
@@ -32,6 +32,3 @@ def save_to_csv(data: list, filename: str) -> None:
         for d in data[:-1]:
             f.write(f"{d},")
         f.write(f"{data[-1]}\n")
-
-
-LOGGER = setup_logger("PhenoStation")

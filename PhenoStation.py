@@ -7,12 +7,15 @@ import Adafruit_GPIO.SPI as SPI
 import ST7735 as TFT
 import hx711
 import RPi.GPIO as GPIO
+import logging
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
 from image_processing import get_total_length
-from utils import LOGGER, save_to_csv
+from utils import save_to_csv
 from show_display import Display
+
+LOGGER = logging.getLogger("PhenoStation")
 
 
 class PhenoStation:
@@ -126,13 +129,13 @@ class PhenoStation:
         # Create the weight_values.csv file if it doesn't exist
         if not os.path.exists(self.WEIGHT_FILE):
             save_to_csv(["date",
-                "raw_weight", "time_raw_weight",
-                "avg_10", "time_avg_10",
-                "avg_100", "time_avg_100",
-                "avg_1000", "time_avg_1000",
-                "flt_10", "time_flt_10",
-                "flt_100", "time_flt_100",
-                "flt_1000", "time_flt_1000"],
+                         "raw_weight", "time_raw_weight",
+                         "avg_10", "time_avg_10",
+                         "avg_100", "time_avg_100",
+                         "avg_1000", "time_avg_1000",
+                         "flt_10", "time_flt_10",
+                         "flt_100", "time_flt_100",
+                         "flt_1000", "time_flt_1000"],
                         self.WEIGHT_FILE)
 
     def send_to_db(self, point: str, field: str, value) -> None:
@@ -462,6 +465,7 @@ class DebugHx711(hx711.HX711):
     DebugHx711 class, inherits from hx711.HX711
     Modified to avoid the infinite loop in the _read function
     """
+
     def __init__(self, dout_pin, pd_sck_pin):
         super().__init__(dout_pin, pd_sck_pin)
 

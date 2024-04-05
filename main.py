@@ -3,12 +3,15 @@ Main file to run the station
 This script starts the main loop of the station, and handles the different menus and measurements
 """
 from PhenoStation import PhenoStation
-from utils import LOGGER
+from utils import setup_logger
 import time
 import datetime
 import RPi.GPIO as GPIO
+import argparse
+import logging
 
 CONFIG_FILE = "config.ini"
+LOGGER = None
 
 
 def main() -> None:
@@ -135,4 +138,20 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
 
 
 if __name__ == "__main__":
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Définition du niveau de log')
+    parser.add_argument('-l', '--logger', type=str, help='Niveau de log (DEBUG, INFO, WARNING, ERROR,'
+                                                         'CRITICAL. Défaut = INFO', default='INFO')
+    args = parser.parse_args()
+
+    # Setup logger
+    log_level_map = {
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL
+    }
+    LOGGER = setup_logger("PhenoStation", level=log_level_map[args.logger])
+
     main()
