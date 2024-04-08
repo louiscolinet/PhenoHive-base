@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser(description='Définition du niveau de log')
     parser.add_argument('-l', '--logger', type=str, help='Niveau de log (DEBUG, INFO, WARNING, ERROR,'
-                                                         'CRITICAL. Défaut = DEBUG', default='DEBUG')
+                                                         'CRITICAL). Défaut = DEBUG', default='DEBUG')
     args = parser.parse_args()
 
     # Setup logger
@@ -152,6 +152,9 @@ if __name__ == "__main__":
         'ERROR': logging.ERROR,
         'CRITICAL': logging.CRITICAL
     }
-    LOGGER = setup_logger("PhenoStation", level=log_level_map[args.logger])
+    try:
+        LOGGER = setup_logger("PhenoStation", level=log_level_map[args.logger])
+    except KeyError:
+        LOGGER = setup_logger("PhenoStation", level=logging.DEBUG)
 
     main()

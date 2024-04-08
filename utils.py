@@ -2,7 +2,7 @@ import datetime
 import logging
 
 
-def setup_logger(name, level):
+def setup_logger(name, level) -> logging.Logger:
     """
     Function to setup the logger
     :param name: name of the logger
