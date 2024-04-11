@@ -1,9 +1,19 @@
 #!/bin/bash
+# Setup script for the PhenoHive project
+# This script installs the necessary packages and enables the SPI interface on the Raspberry Pi
+# It also sets up the PhenoHive service to run on boot
+# It is intended to be run on a fresh install of Raspbian
 
 # Check if the script is being run as root
 if [ "$EUID" -ne 0 ]
   then echo "Please run as root: sudo ./setup.sh"
   exit
+fi
+
+# Check if the script is being run on a Debian-based system
+if [ ! -f /etc/debian_version ]; then
+    echo "This script is intended to run on a Debian-based system."
+    exit
 fi
 
 # Progress bar function
