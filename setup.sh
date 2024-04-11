@@ -16,45 +16,45 @@ function progress {
 
 echo "Installing necessary packages..."
 # Install the necessary packages
-{
-sudo apt-get update;
-progress 6;
-sudo apt-get install libatlas-base-dev;
-progress 12;
-sudo pip install numpy==1.23.5;
-progress 18;
-sudo pip install opencv-python==4.6.0.66;
-progress 24;
-sudo pip install scipy==1.8.1;
-progress 30;
-sudo pip install scikit-image==0.19.3;
-progress 36;
-sudo pip install pandas==2.0.0;
-progress 42;
-sudo pip install statsmodels==0.13.5;
-progress 48;
-sudo pip install plantcv;
-progress 54;
-sudo pip install influxdb_client;
-progress 60;
-sudo pip install configparser;
-progress 66;
-sudo pip install hx711;
-progress 72;
+
+progress 0
+sudo apt-get update >> /dev/null 2>&1
+progress 6
+sudo apt-get install libatlas-base-dev >> /dev/null 2>&1
+progress 12
+sudo pip install numpy==1.23.5 >> /dev/null 2>&1
+progress 18
+sudo pip install opencv-python==4.6.0.66 >> /dev/null 2>&1
+progress 24
+sudo pip install scipy==1.8.1 >> /dev/null 2>&1
+progress 30
+sudo pip install scikit-image==0.19.3 >> /dev/null 2>&1
+progress 36
+sudo pip install pandas==2.0.0 >> /dev/null 2>&1
+progress 42
+sudo pip install statsmodels==0.13.5 >> /dev/null 2>&1
+progress 48
+sudo pip install plantcv >> /dev/null 2>&1
+progress 54
+sudo pip install influxdb_client >> /dev/null 2>&1
+progress 60
+sudo pip install configparser >> /dev/null 2>&1
+progress 66
+sudo pip install hx711 >> /dev/null 2>&1
+progress 72
 
 # Install the ST7735 library
-sudo apt-get install build-essential python-dev python-smbus python-pip python-pil python-numpy;
-progress 78;
-sudo pip install RPi.GPIO Adafruit_GPIO;
-progress 84;
-git clone https://github.com/degzero/Python_ST7735.git;
-cd Python_ST7735 || echo "Error: Could not find the Python_ST7735 directory"; exit;
-sudo python setup.py install;
-progress 90;
-cd ..; rm -rf Python_ST7735;
-sudo apt-get autoremove;
-progress 100;
-} >> /dev/null
+sudo apt-get install build-essential python-dev python-smbus python-pip python-pil python-numpy  >> /dev/null 2>&1
+progress 78
+sudo pip install RPi.GPIO Adafruit_GPIO >> /dev/null 2>&1
+progress 84
+git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
+cd Python_ST7735 || echo "Error: Could not find the Python_ST7735 directory"; exit
+sudo python setup.py install >> /dev/null 2>&1
+progress 90
+cd ..; rm -rf Python_ST7735 >> /dev/null 2>&1
+sudo apt-get autoremove >> /dev/null 2>&1
+progress 100
 echo "Packages installed successfully."
 
 echo "Enabling SPI interface..."
