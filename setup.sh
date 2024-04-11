@@ -8,7 +8,8 @@ fi
 
 echo "Installing necessary packages..."
 # Install the necessary packages
-{sudo apt-get update;
+{
+sudo apt-get update;
 sudo apt-get install libatlas-base-dev;
 sudo pip install numpy==1.23.5
 sudo pip install opencv-python==4.6.0.66
@@ -28,6 +29,7 @@ git clone https://github.com/degzero/Python_ST7735.git;
 cd Python_ST7735 || echo "Error: Could not find the Python_ST7735 directory"; exit;
 sudo python setup.py install;$
 cd ..; rm -rf Python_ST7735;
+sudo apt-get autoremove;
 } >> /dev/null
 echo "Packages installed successfully."
 
