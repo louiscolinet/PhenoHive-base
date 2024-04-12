@@ -16,18 +16,11 @@ if [ ! -f /etc/alpine-release ]; then
     exit
 fi
 
-# Check if 'sudo' is installed
-if ! command -v sudo &> /dev/null
-then
-    echo "sudo could not be found. Please install sudo and try again: apk add sudo"
-    exit
-fi
-
 # Check if 'pip' is installed, if not, install it
 if ! command -v pip &> /dev/null
 then
     echo "pip could not be found. Installing pip..."
-    sudo apk add py3-pip >> /dev/null 2>&1
+    apk add py3-pip >> /dev/null 2>&1
 fi
 
 # Progress bar function
@@ -38,45 +31,59 @@ function progress {
     printf "\r[%-${barlength}s (%d%%)] " "${bar:0:n}" "$1"
 }
 
+# Create virtual environment
+echo "Creating virtual environment..."
+python3 -m venv venv >> /dev/null 2>&1
+source venv/bin/activate >> /dev/null 2>&1
+echo "Virtual environment created successfully."
+
 echo "Installing necessary packages..."
 # Install the necessary packages
 
 progress 0
-sudo apk update >> /dev/null 2>&1
+apk update >> /dev/null 2>&1
 progress 6
-sudo apk add libatlas-base-dev >> /dev/null 2>&1
+apk add libatlas-base-dev >> /dev/null 2>&1
 progress 12
-sudo pip install numpy==1.23.5 >> /dev/null 2>&1
+apk add py3-numpy==1.25.2-r0 >> /dev/null 2>&1
 progress 18
-sudo pip install opencv-python==4.6.0.66 >> /dev/null 2>&1
+apk add py3-opencv-python==4.8.1-r0 >> /dev/null 2>&1
 progress 24
-sudo pip install scipy==1.8.1 >> /dev/null 2>&1
+pip install scipy==1.8.1 >> /dev/null 2>&1
 progress 30
-sudo pip install scikit-image==0.19.3 >> /dev/null 2>&1
+pip install scikit-image==0.19.3 >> /dev/null 2>&1
 progress 36
-sudo pip install pandas==2.0.0 >> /dev/null 2>&1
+pip install pandas==2.0.0 >> /dev/null 2>&1
 progress 42
-sudo pip install statsmodels==0.13.5 >> /dev/null 2>&1
+pip install statsmodels==0.13.5 >> /dev/null 2>&1
 progress 48
-sudo pip install plantcv >> /dev/null 2>&1
+pip install plantcv >> /dev/null 2>&1
 progress 54
-sudo pip install influxdb_client >> /dev/null 2>&1
+pip install influxdb_client >> /dev/null 2>&1
 progress 60
-sudo pip install configparser >> /dev/null 2>&1
+pip install configparser >> /dev/null 2>&1
 progress 66
-sudo pip install hx711 >> /dev/null 2>&1
+pip install hx711 >> /dev/null 2>&1
 progress 72
 
-# Install the ST7735 library
-sudo apk add build-essential python-dev python-smbus python-pip python-pil python-numpy  >> /dev/null 2>&1
+# Install gcc and related packages
+apk add gcc build-base spi-tools musl-dev >> /dev/null 2>&1
+# Add testing repository
+echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" | sudo tee -a /etc/apk/repositories
+# Install py3-spidev
+apk add py3-spidev >> /dev/null 2>&1
 progress 78
-sudo pip install RPi.GPIO Adafruit_GPIO >> /dev/null 2>&1
+
+# Install the ST7735 library
+apk add build-essential python-dev python-smbus python-pil >> /dev/null 2>&1
 progress 84
+pip install RPi.GPIO Adafruit_GPIO >> /dev/null 2>&1
+progress 90
 git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
 cd Python_ST7735 || echo "Error: Could not find the Python_ST7735 directory"; exit
-sudo python setup.py install >> /dev/null 2>&1
-progress 90
-cd ..; rm -rf Python_ST7735 >> /dev/null 2>&1
+python setup.py install >> /dev/null 2>&1
+progress 96
+cd ..; sudo rm -rf Python_ST7735 >> /dev/null 2>&1
 progress 100
 echo "Packages installed successfully."
 
