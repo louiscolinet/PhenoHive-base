@@ -128,15 +128,7 @@ class PhenoStation:
 
         # Create the weight_values.csv file if it doesn't exist
         if not os.path.exists(self.WEIGHT_FILE):
-            save_to_csv(["date",
-                         "raw_weight", "time_raw_weight",
-                         "avg_10", "time_avg_10",
-                         "avg_100", "time_avg_100",
-                         "avg_1000", "time_avg_1000",
-                         "flt_10", "time_flt_10",
-                         "flt_100", "time_flt_100",
-                         "flt_1000", "time_flt_1000"],
-                        self.WEIGHT_FILE)
+            save_to_csv(["date", "weight_data", "elapsed_time", "std_deviation"], self.WEIGHT_FILE)
 
     def send_to_db(self, point: str, field: str, value) -> None:
         """
@@ -255,64 +247,6 @@ class PhenoStation:
         self.cam.stop()
         return path_img
 
-    def collect_weight_average(self, n: int = 1) -> float:
-        """
-        Collect the weight from the load cell with a filter (if n > 1)
-        The collected weight is the average of the n measurements (50th percentile)
-        :param n: number of measurements to take (default: 1)
-        :type n: int
-        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
-        :rtype: float
-        """
-        # Start the measurement
-        weight_list = []
-
-        for _ in range(n):
-            weight = self.get_weight() - self.tare
-            weight_list.append(weight)
-
-        if n == 1:
-            return weight_list[0]
-
-        # Take the average of the measurements (acts as the 50th percentile)
-        filtered_value = sum(weight_list) / len(weight_list)
-
-        # Return the filtered value
-        return filtered_value
-
-    def collect_weight_percentile(self, n: int = 1) -> float:
-        """
-        Collect the weight from the load cell with a filter (if n > 1)
-        The collected weight is the average of the collected measurements, where only the values between the 25th and
-        75th percentile are kept
-        :param n: number of measurements to take (default: 1)
-        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
-        """
-        # Start the measurement
-        weight_list = []
-        for _ in range(n):
-            weight = self.get_weight() - self.tare
-            weight_list.append(weight)
-
-        if n == 1:
-            return weight_list[0]
-
-        # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
-        # This is done to avoid the noise and abnormal values from the load cell
-        weight_list.sort()
-        q1 = weight_list[int(len(weight_list) / 4)]
-        q3 = weight_list[int(3 * len(weight_list) / 4)]
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
-
-        # Compute the average weight from the filtered list
-        filtered_value = sum(weight_list) / len(weight_list)
-
-        # Return the filtered value
-        return filtered_value
-
     def measurement_pipeline(self) -> tuple[int, float]:
         """
         Measurement pipeline
@@ -393,56 +327,21 @@ class PhenoStation:
 
         self.disp.show_collecting_data("Getting weight (1)")
         start = time.time()
-        weight = self.collect_weight_average(1)
-        elp_1 = time.time() - start
-        collected.append(weight)
-        collected.append(elp_1)
+        weights = []
+        for _ in range(1000):
+            # Collect 1000 raw data
+            weights.append(self.get_weight())
+        elapsed = time.time() - start
+        collected.append(weights)
+        collected.append(elapsed)
 
-        self.disp.show_collecting_data("Getting weight (avg, 10)")
-        start = time.time()
-        weight_avg_10 = self.collect_weight_average(10)
-        elp_avg_10 = time.time() - start
-        collected.append(weight_avg_10)
-        collected.append(elp_avg_10)
+        # Compute the average weight
+        weight = sum(weights) / len(weights)
+        # Compute the standard deviation
+        std_dev = (sum([(w - weight) ** 2 for w in weights]) / len(weights)) ** 0.5
+        collected.append(std_dev)
 
-        self.disp.show_collecting_data("Getting weight (avg, 100)")
-        start = time.time()
-        weight_avg_100 = self.collect_weight_average(100)
-        elp_avg_100 = time.time() - start
-        collected.append(weight_avg_100)
-        collected.append(elp_avg_100)
-
-        self.disp.show_collecting_data("Getting weight (avg, 1000)")
-        start = time.time()
-        weight_avg_1000 = self.collect_weight_average(1000)
-        elp_avg_1000 = time.time() - start
-        collected.append(weight_avg_1000)
-        collected.append(elp_avg_1000)
-
-        self.disp.show_collecting_data("Getting weight (per, 10)")
-        start = time.time()
-        weight_flt_10 = self.collect_weight_percentile(10)
-        elp_ftl_10 = time.time() - start
-        collected.append(weight_flt_10)
-        collected.append(elp_ftl_10)
-
-        self.disp.show_collecting_data("Getting weight (per, 100)")
-        start = time.time()
-        weight_flt_100 = self.collect_weight_percentile(100)
-        elp_ftl_100 = time.time() - start
-        collected.append(weight_flt_100)
-        collected.append(elp_ftl_100)
-
-        self.disp.show_collecting_data("Getting weight (per, 1000)")
-        start = time.time()
-        weight_flt_1000 = self.collect_weight_percentile(1000)
-        elp_ftl_1000 = time.time() - start
-        collected.append(weight_flt_1000)
-        collected.append(elp_ftl_1000)
-
-        LOGGER.debug(f"Weight : {weight} in {elp_1}s, {weight_avg_10} in {elp_avg_10}s, {weight_avg_100} in "
-                     f"{elp_avg_100}s, {weight_avg_1000} in {elp_avg_1000}s, {weight_flt_10} in {elp_ftl_10}s, "
-                     f"{weight_flt_100} in {elp_ftl_100}s, {weight_flt_1000} in {elp_ftl_1000}s")
+        LOGGER.debug(f"Weight (avg) : {weight} in {elapsed}s, std deviation : {std_dev}")
 
         # Modification of the 16/03/2024
         # Keep the different weight values in a csv file
