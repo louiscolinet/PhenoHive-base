@@ -87,8 +87,42 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     Calibration loop
     :param station: station object
     """
+    def tare(station: PhenoStation, n: int = 1) -> float:
+        """
+        Collect the weight from the load cell with a filter (if n > 1)
+        The collected weight is the average of the collected measurements, where only the values between the 25th and
+        75th percentile are kept
+        :param station: station object
+        :param n: number of measurements to take (default: 1)
+        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
+        """
+        # Start the measurement
+        weight_list = []
+        for _ in range(n):
+            weight = station.get_weight() - station.tare
+            weight_list.append(weight)
+
+        if n == 1:
+            return weight_list[0]
+
+        # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
+        # This is done to avoid the noise and abnormal values from the load cell
+        weight_list.sort()
+        q1 = weight_list[int(len(weight_list) / 4)]
+        q3 = weight_list[int(3 * len(weight_list) / 4)]
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
+
+        # Compute the average weight from the filtered list
+        filtered_value = sum(weight_list) / len(weight_list)
+
+        # Return the filtered value
+        return filtered_value
+    
     # station.tare = station.get_weight()  # Deprecated
-    station.tare = station.collect_weight_percentile(100)
+    station.tare = tare(station, 100)
     station.parser['cal_coef']["tare"] = str(station.tare)
     raw_weight = 0
     while True:
