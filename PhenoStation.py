@@ -325,7 +325,7 @@ class PhenoStation:
         """
         collected = [datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")]
 
-        self.disp.show_collecting_data("Getting weight (1)")
+        self.disp.show_collecting_data("Getting weight (1000)")
         start = time.time()
         weights = []
         for _ in range(1000):
