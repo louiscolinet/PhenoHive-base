@@ -20,42 +20,36 @@ fi
 if ! command -v pip &> /dev/null
 then
     echo "SETUP - pip could not be found. Installing pip..."
-    apk add py3-pip >> /dev/null 2>&1
+    apk add python3 py3-pip python3-dev
+    pip3 install --upgrade pip setuptools wheel
 fi
-
-# Create virtual environment
-echo "SETUP - Creating virtual environment..."
-python3 -m venv venv
-source venv/bin/activate
-echo "SETUP - Virtual environment created successfully."
 
 echo "SETUP - Installing necessary packages..."
 # Install the necessary packages
-
 apk update
 # Install gcc and related packages
-apk add libatlas-base-dev gcc build-base spi-tools musl-dev build-essential python-dev python-smbus python-pil
-apk add py3-numpy==1.25.2-r0
-apk add py3-opencv-python==4.8.1-r0
-pip install scipy==1.8.1
-pip install scikit-image==0.19.3
-pip install pandas==2.0.0
-pip install statsmodels==0.13.5
-pip install plantcv
-pip install influxdb_client
-pip install configparser
-pip install hx711
+apk add gcc build-base build-essential libatlas-base-dev spi-tools musl-dev python-smbus python-pil
+pip3 install numpy
+pip3 install opencv
+pip3 install scipy
+pip3 install scikit-image
+pip3 install pandas
+pip3 install statsmodels
+pip3 install plantcv
+pip3 install influxdb_client
+pip3 install configparser
+pip3 install hx711
 
 # Add testing repository
 echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" | sudo tee -a /etc/apk/repositories
-# Install py3-spidev
-apk add py3-spidev
+# Install spidev
+pip3 install spidev
 
 # Install the ST7735 library
-pip install RPi.GPIO Adafruit_GPIO
+pip3 install RPi.GPIO Adafruit_GPIO
 git clone https://github.com/degzero/Python_ST7735.git
 cd Python_ST7735 || echo "SETUP - Error: Could not find the Python_ST7735 directory"; exit
-python setup.py install
+python3 setup.py install
 cd ..; sudo rm -rf Python_ST7735
 echo "SETUP - Packages installed successfully."
 
