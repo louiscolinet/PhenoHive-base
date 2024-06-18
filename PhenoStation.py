@@ -7,12 +7,15 @@ import Adafruit_GPIO.SPI as SPI
 import ST7735 as TFT
 import hx711
 import RPi.GPIO as GPIO
+import logging
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
 from image_processing import get_total_length
-from utils import LOGGER, save_to_csv
+from utils import save_to_csv
 from show_display import Display
+
+LOGGER = logging.getLogger("PhenoStation")
 
 
 class PhenoStation:
@@ -125,8 +128,7 @@ class PhenoStation:
 
         # Create the weight_values.csv file if it doesn't exist
         if not os.path.exists(self.WEIGHT_FILE):
-            save_to_csv(["raw_weight", "avg_10", "avg_100", "avg_1000", "flt_10", "flt_100", "flt_1000"],
-                        self.WEIGHT_FILE)
+            save_to_csv(["date", "weight_data", "elapsed_time", "std_deviation"], self.WEIGHT_FILE)
 
     def send_to_db(self, point: str, field: str, value) -> None:
         """
@@ -245,109 +247,29 @@ class PhenoStation:
         self.cam.stop()
         return path_img
 
-    def collect_weight_average(self, n: int = 1) -> float:
-        """
-        Collect the weight from the load cell with a filter (if n > 1)
-        The collected weight is the average of the n measurements (50th percentile)
-        :param n: number of measurements to take (default: 1)
-        :type n: int
-        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
-        :rtype: float
-        """
-        # Start the measurement
-        weight_list = []
-
-        for _ in range(n):
-            weight = self.get_weight() - self.tare
-            weight_list.append(weight)
-
-        if n == 1:
-            return weight_list[0]
-
-        # Take the average of the measurements (acts as the 50th percentile)
-        filtered_value = sum(weight_list) / len(weight_list)
-
-        # Return the filtered value
-        return filtered_value
-
-    def collect_weight_percentile(self, n: int = 1) -> float:
-        """
-        Collect the weight from the load cell with a filter (if n > 1)
-        The collected weight is the average of the collected measurements, where only the values between the 25th and
-        75th percentile are kept
-        :param n: number of measurements to take (default: 1)
-        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
-        """
-        # Start the measurement
-        weight_list = []
-        for _ in range(n):
-            weight = self.get_weight() - self.tare
-            weight_list.append(weight)
-
-        if n == 1:
-            return weight_list[0]
-
-        # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
-        # This is done to avoid the noise and abnormal values from the load cell
-        weight_list.sort()
-        q1 = weight_list[int(len(weight_list) / 4)]
-        q3 = weight_list[int(3 * len(weight_list) / 4)]
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
-
-        # Compute the average weight from the filtered list
-        filtered_value = sum(weight_list) / len(weight_list)
-
-        # Return the filtered value
-        return filtered_value
-
-    def measurement_pipeline(self):
+    def measurement_pipeline(self) -> tuple[int, float]:
         """
         Measurement pipeline
         :return: a tuple with the growth value and the weight
         """
-        # Get photo
         LOGGER.info("Starting measurement pipeline")
         self.disp.show_collecting_data("Starting measurement pipeline")
         time.sleep(1)
-        try:
-            self.disp.show_collecting_data("Taking photo")
-            pic, path_img = self.capture_and_display()
-            self.disp.show_collecting_data("Processing photo")
-            time.sleep(1)
-        except Exception as e:
-            LOGGER.error(f"Error while taking the photo: {e}")
-            self.disp.show_collecting_data("Error while taking the photo")
-            time.sleep(5)
-            return 0, 0
-        # Get numerical value from the photo
-        if pic != "" and path_img != "":
-            try:
-                growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
-                LOGGER.debug(f"Growth value : {growth_value}")
-                self.disp.show_collecting_data(f"Growth value : {round(growth_value, 2)}")
-                time.sleep(2)
-            except Exception as e:
-                LOGGER.error(f"Error while processing the photo: {e}")
-                self.disp.show_collecting_data("Error while processing the photo")
-                time.sleep(5)
-                return 0, 0
-        else:
-            growth_value = -1
+
+        # Take and process photo
+        # Disabled (18/03/2024) to focus on weight collection
+        # try:
+        #     self.disp.show_collecting_data("Taking photo")
+        #     pic, growth_value = "", 0  # self.picture_pipeline()
+        # except Exception as e:
+        #     LOGGER.error(f"Error while taking the photo: {e}")
+        #     self.disp.show_collecting_data("Error while taking the photo")
+        #     time.sleep(5)
+        #     return 0, 0
+
         # Get weight
         try:
-            self.disp.show_collecting_data("Getting weight")
-            weight = self.collect_weight_average(1)
-            weight_avg_10 = self.collect_weight_average(10)
-            weight_avg_100 = self.collect_weight_average(100)
-            weight_avg_1000 = self.collect_weight_average(1000)
-            weight_flt_10 = self.collect_weight_percentile(10)
-            weight_flt_100 = self.collect_weight_percentile(100)
-            weight_flt_1000 = self.collect_weight_percentile(1000)
-            LOGGER.debug(f"Weight : {weight}, {weight_avg_10}, {weight_avg_100}, {weight_avg_1000}, {weight_flt_10}, " +
-                         f"{weight_flt_100}, {weight_flt_1000}")
+            weight = self.weight_pipeline()
 
             # Measurement finished, display the weight
             self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
@@ -357,32 +279,84 @@ class PhenoStation:
             self.disp.show_collecting_data("Error while getting the weight")
             time.sleep(5)
             return 0, 0
+
         # Send data to the DB
-        try:
-            self.disp.show_collecting_data("Sending data to the DB")
-            field_id = "StationID_%s" % self.station_id
-            LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
-            self.send_to_db("Growth", field_id, growth_value)
-            self.send_to_db("Weight", field_id, weight)
-            self.send_to_db("Picture", field_id, pic)  # Send picture in base64
+        # Disabled (18/03/2024) to focus on weight collection (data is saved to a csv, no need for the DB
+        # try:
+        #     self.disp.show_collecting_data("Sending data to the DB")
+        #     self.database_pipeline(growth_value, weight, pic)
+        #     LOGGER.debug("Data sent to the DB")
+        #     self.disp.show_collecting_data("Data sent to the DB")
+        #     time.sleep(2)
+        # except Exception as e:
+        #     LOGGER.error(f"Error while sending data to the DB: {e}")
+        #     self.disp.show_collecting_data("Error while sending data to the DB")
+        #     time.sleep(5)
+        #     return 0, 0
 
-            # Modification of the 16/03/2024
-            # Keep the different weight values in a csv file
-            save_to_csv([str(weight), str(weight_avg_10), str(weight_avg_100), str(weight_avg_1000), str(weight_flt_10),
-                         str(weight_flt_100), str(weight_flt_1000)], "data/weight_values.csv")
-
-            LOGGER.debug("Data sent to the DB")
-            self.disp.show_collecting_data("Data sent to the DB")
-            time.sleep(2)
-        except Exception as e:
-            LOGGER.error(f"Error while sending data to the DB: {e}")
-            self.disp.show_collecting_data("Error while sending data to the DB")
-            time.sleep(5)
-            return 0, 0
         LOGGER.info("Measurement pipeline finished")
         self.disp.show_collecting_data("Measurement pipeline finished")
         time.sleep(1)
-        return growth_value, weight
+        # return growth_value, weight
+        return 0, weight
+
+    def picture_pipeline(self) -> tuple[str, int]:
+        """
+        Picture processing pipeline
+        :return: the picture and the growth value
+        """
+        # Take and display the photo
+        pic, path_img = self.capture_and_display()
+        self.disp.show_collecting_data("Processing photo")
+        time.sleep(1)
+        # Process the segment lengths to get the growth value
+        growth_value = -1
+        if pic != "" and path_img != "":
+            growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
+            LOGGER.debug(f"Growth value : {growth_value}")
+            self.disp.show_collecting_data(f"Growth value : {round(growth_value, 2)}")
+            time.sleep(2)
+        return pic, growth_value
+
+    def weight_pipeline(self):
+        """
+        Weight collection pipeline
+        :return: the weight of the plant
+        """
+        collected = [datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")]
+
+        self.disp.show_collecting_data("Getting weight (1000)")
+        start = time.time()
+        weights = []
+        for _ in range(1000):
+            # Collect 1000 raw data
+            weights.append(self.get_weight())
+        elapsed = time.time() - start
+        collected.append(weights)
+        collected.append(elapsed)
+
+        # Compute the average weight
+        weight = sum(weights) / len(weights)
+        # Compute the standard deviation
+        std_dev = (sum([(w - weight) ** 2 for w in weights]) / len(weights)) ** 0.5
+        collected.append(std_dev)
+
+        LOGGER.debug(f"Weight (avg) : {weight} in {elapsed}s, std deviation : {std_dev}")
+
+        # Modification of the 16/03/2024
+        # Keep the different weight values in a csv file
+        save_to_csv(collected, self.WEIGHT_FILE)
+        return weight
+
+    def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
+        """
+        Send the collected data to the database
+        """
+        field_id = "StationID_%s" % self.station_id
+        LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
+        self.send_to_db("Growth", field_id, growth_value)
+        self.send_to_db("Weight", field_id, weight)
+        self.send_to_db("Picture", field_id, pic)  # Send picture in base64
 
 
 class DebugHx711(hx711.HX711):
@@ -390,6 +364,7 @@ class DebugHx711(hx711.HX711):
     DebugHx711 class, inherits from hx711.HX711
     Modified to avoid the infinite loop in the _read function
     """
+
     def __init__(self, dout_pin, pd_sck_pin):
         super().__init__(dout_pin, pd_sck_pin)
 
@@ -399,7 +374,7 @@ class DebugHx711(hx711.HX711):
 
     def get_raw_data(self, times=5):
         # Custom read function to debug (with a max of 100 tries)
-        start = time.time()
+        # start = time.time()
         data_list = []
         count = 0
         while len(data_list) < times and count < 1000:
@@ -407,5 +382,5 @@ class DebugHx711(hx711.HX711):
             if data not in [False, -1]:
                 data_list.append(data)
             count += 1
-        LOGGER.debug(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
+        # LOGGER.debug(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
         return data_list

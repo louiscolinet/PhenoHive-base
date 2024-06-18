@@ -1,0 +1,12 @@
+[Unit]
+Description=PhenoHive
+After=multi-user.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/Desktop/PhenoHive
+ExecStart=/usr/bin/python /home/pi/Desktop/PhenoHive/main.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

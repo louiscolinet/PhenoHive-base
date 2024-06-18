@@ -1,14 +1,13 @@
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-from ST7735 import TFT
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
 
 
 class Display:
-    def __init__(self, disp: TFT.ST7735, width: int, height: int) -> None:
+    def __init__(self, disp, width: int, height: int) -> None:
         """
         Initialize the class variables
         :param disp: ST7735 display object
