@@ -40,8 +40,8 @@ fi
 echo -e "${INFO}[INFO] - Running pre-setup checks...${WHITE}"
 
 # Change repository to 3.19
-echo "https://dl-cdn.alpinelinux.org/alpine/v3.19/main" | sudo tee /etc/apk/repositories >/dev/null2>&1
-echo "https://dl-cdn.alpinelinux.org/alpine/v3.19/community" | sudo tee -a /etc/apk/repositories >/dev/null2>&1
+echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/main" | sudo tee /etc/apk/repositories >/dev/null2>&1
+echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/community" | sudo tee -a /etc/apk/repositories >/dev/null2>&1
 # Add testing repository
 echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" | sudo tee -a /etc/apk/repositories >/dev/null2>&1
 
