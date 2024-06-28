@@ -84,7 +84,16 @@ apk add cargo openblas-dev spi-tools musl-dev python3-dev py3-smbus py3-pillow p
 
 # Install the necessary Python packages (note: --break-system-packages is used to avoid conflicts with the system packages)
 #pip install opencv-python scipy scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
-pip install scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
+pip install scikit-image --break-system-packages --root-user-action=ignore
+pip install pandas --break-system-packages --root-user-action=ignore
+pip install statsmodels --break-system-packages --root-user-action=ignore
+pip install plantcv --break-system-packages --root-user-action=ignore
+pip install influxdb_client --break-system-packages --root-user-action=ignore
+pip install configparser --break-system-packages --root-user-action=ignore
+pip install hx711 --break-system-packages --root-user-action=ignore
+pip install spidev --break-system-packages --root-user-action=ignore
+pip install RPi.GPIO --break-system-packages --root-user-action=ignore
+pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore
 
 # Disable git ssl verification
 git config --global http.sslVerify false
