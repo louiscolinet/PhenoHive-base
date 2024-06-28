@@ -50,13 +50,13 @@ apk update >/dev/null2>&1
 # Install ca-certificates
 apk --no-cache add ca-certificates >/dev/null2>&1
 # Install gcc and related packages
-apk add linux-headers gcc build-base alpine-sdk 
+apk --no-cache add linux-headers gcc build-base alpine-sdk
 
 # Check if 'git' is installed, if not, install it
 if ! command -v git &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - git could not be found. Installing git...${WHITE}"
-    apk add git >/dev/null2>&1
+    apk --no-cache add git >/dev/null2>&1
 fi
 
 # Check if 'python3' is installed, if not, install it
@@ -64,36 +64,36 @@ if ! command -v python3 &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - python3 could not be found. Installing python3...${WHITE}"
     # We need python3.11 as python3.12 is not supported yet by opencv-python
-    apk add python3==3.11.9-r0 >/dev/null2>&1
+    apk --no-cache add python3==3.11.9-r0 >/dev/null2>&1
 fi
 
 # Check if 'pip' is installed, if not, install it
 if ! command -v pip &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - pip could not be found. Installing pip...${WHITE}"
-    apk add py3-pip >/dev/null2>&1
+    apk --no-cache add py3-pip >/dev/null2>&1
     python3 -m ensurepip --upgrade >/dev/null2>&1
-    python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore >/dev/null2>&1
+    python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir >/dev/null2>&1
 fi
 
 # Start the setup
 echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
 # Install the necessary Alpine packages
-apk add cargo openblas-dev spi-tools musl-dev python3-dev py3-smbus py3-pillow py3-numpy py3-opencv py3-scipy
+apk --no-cache add cargo openblas-dev spi-tools musl-dev python3-dev py3-smbus py3-pillow py3-numpy py3-opencv py3-scipy
 
 # Install the necessary Python packages (note: --break-system-packages is used to avoid conflicts with the system packages)
 #pip install opencv-python scipy scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
-pip install scikit-image --break-system-packages --root-user-action=ignore
-pip install pandas --break-system-packages --root-user-action=ignore
-pip install statsmodels --break-system-packages --root-user-action=ignore
-pip install plantcv --break-system-packages --root-user-action=ignore
-pip install influxdb_client --break-system-packages --root-user-action=ignore
-pip install configparser --break-system-packages --root-user-action=ignore
-pip install hx711 --break-system-packages --root-user-action=ignore
-pip install spidev --break-system-packages --root-user-action=ignore
-pip install RPi.GPIO --break-system-packages --root-user-action=ignore
-pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore
+pip install scikit-image --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install pandas --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install statsmodels --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install spidev --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir
+pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir
 
 # Disable git ssl verification
 git config --global http.sslVerify false
