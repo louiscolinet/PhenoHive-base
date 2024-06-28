@@ -83,6 +83,9 @@ apk add cargo openblas-dev spi-tools musl-dev python3-dev py3-smbus py3-pillow
 # Install the necessary Python packages (note: --break-system-packages is used to avoid conflicts with the system packages)
 pip install numpy opencv-python scipy scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
 
+# Disable git ssl verification
+git config --global http.sslVerify false
+
 # Install the ST7735 library
 git clone https://github.com/degzero/Python_ST7735.git
 cd Python_ST7735 || echo -e "${ERROR}[ERROR] - Could not find the Python_ST7735 directory.${WHITE}"
