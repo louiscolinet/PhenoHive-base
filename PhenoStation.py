@@ -260,7 +260,7 @@ class PhenoStation:
         # Take and process photo
         try:
             self.disp.show_collecting_data("Taking photo")
-            pic, growth_value = "", 0  # self.picture_pipeline()
+            pic, growth_value = self.picture_pipeline()
         except Exception as e:
             LOGGER.error(f"Error while taking the photo: {e}")
             self.disp.show_collecting_data("Error while taking the photo")
@@ -330,12 +330,13 @@ class PhenoStation:
             # Collect 1000 raw data
             weights.append(self.get_weight())
         elapsed = time.time() - start
-        collected.append(elapsed)
-        collected += weights
 
         # Compute the median weight
         median = sorted(weights)[len(weights) // 2]
+        collected.append(median)
+        collected.append(elapsed)
         LOGGER.debug(f"Weight (median) : {median} in {elapsed}s")
+        collected += weights
 
         # Store the data in a csv file
         save_to_csv(collected, self.WEIGHT_FILE)
