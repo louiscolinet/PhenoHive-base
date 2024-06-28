@@ -128,7 +128,8 @@ class PhenoStation:
 
         # Create the weight_values.csv file if it doesn't exist
         if not os.path.exists(self.WEIGHT_FILE):
-            save_to_csv(["date", "weight_data", "elapsed_time", "std_deviation"], self.WEIGHT_FILE)
+            columns = ["date", "median_weight", "elapsed_time"] + [f"raw_data_{i}" for i in range(1000)]
+            save_to_csv(columns, self.WEIGHT_FILE)
 
     def send_to_db(self, point: str, field: str, value) -> None:
         """
@@ -182,7 +183,7 @@ class PhenoStation:
                         else:
                             write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
                                             time=timestamp)
-                # os.remove(f"data/{file}")
+
                 # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
                 new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
                 os.rename(f"data/{file}", f"{new_name}")
@@ -257,15 +258,14 @@ class PhenoStation:
         time.sleep(1)
 
         # Take and process photo
-        # Disabled (18/03/2024) to focus on weight collection
-        # try:
-        #     self.disp.show_collecting_data("Taking photo")
-        #     pic, growth_value = "", 0  # self.picture_pipeline()
-        # except Exception as e:
-        #     LOGGER.error(f"Error while taking the photo: {e}")
-        #     self.disp.show_collecting_data("Error while taking the photo")
-        #     time.sleep(5)
-        #     return 0, 0
+        try:
+            self.disp.show_collecting_data("Taking photo")
+            pic, growth_value = "", 0  # self.picture_pipeline()
+        except Exception as e:
+            LOGGER.error(f"Error while taking the photo: {e}")
+            self.disp.show_collecting_data("Error while taking the photo")
+            time.sleep(5)
+            return 0, 0
 
         # Get weight
         try:
@@ -281,24 +281,22 @@ class PhenoStation:
             return 0, 0
 
         # Send data to the DB
-        # Disabled (18/03/2024) to focus on weight collection (data is saved to a csv, no need for the DB
-        # try:
-        #     self.disp.show_collecting_data("Sending data to the DB")
-        #     self.database_pipeline(growth_value, weight, pic)
-        #     LOGGER.debug("Data sent to the DB")
-        #     self.disp.show_collecting_data("Data sent to the DB")
-        #     time.sleep(2)
-        # except Exception as e:
-        #     LOGGER.error(f"Error while sending data to the DB: {e}")
-        #     self.disp.show_collecting_data("Error while sending data to the DB")
-        #     time.sleep(5)
-        #     return 0, 0
+        try:
+            self.disp.show_collecting_data("Sending data to the DB")
+            self.database_pipeline(growth_value, weight, pic)
+            LOGGER.debug("Data sent to the DB")
+            self.disp.show_collecting_data("Data sent to the DB")
+            time.sleep(2)
+        except Exception as e:
+            LOGGER.error(f"Error while sending data to the DB: {e}")
+            self.disp.show_collecting_data("Error while sending data to the DB")
+            time.sleep(5)
+            return 0, 0
 
         LOGGER.info("Measurement pipeline finished")
         self.disp.show_collecting_data("Measurement pipeline finished")
         time.sleep(1)
-        # return growth_value, weight
-        return 0, weight
+        return growth_value, weight
 
     def picture_pipeline(self) -> tuple[str, int]:
         """
@@ -332,21 +330,16 @@ class PhenoStation:
             # Collect 1000 raw data
             weights.append(self.get_weight())
         elapsed = time.time() - start
-        collected.append(weights)
         collected.append(elapsed)
+        collected += weights
 
-        # Compute the average weight
-        weight = sum(weights) / len(weights)
-        # Compute the standard deviation
-        std_dev = (sum([(w - weight) ** 2 for w in weights]) / len(weights)) ** 0.5
-        collected.append(std_dev)
+        # Compute the median weight
+        median = sorted(weights)[len(weights) // 2]
+        LOGGER.debug(f"Weight (median) : {median} in {elapsed}s")
 
-        LOGGER.debug(f"Weight (avg) : {weight} in {elapsed}s, std deviation : {std_dev}")
-
-        # Modification of the 16/03/2024
-        # Keep the different weight values in a csv file
+        # Store the data in a csv file
         save_to_csv(collected, self.WEIGHT_FILE)
-        return weight
+        return median
 
     def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
         """
