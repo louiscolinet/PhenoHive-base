@@ -47,6 +47,8 @@ echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" | sudo tee -a /etc/apk/
 
 # Ensure the package list is up to date
 apk update >/dev/null2>&1
+# Install ca-certificates
+apk --no-cache add ca-certificates >/dev/null2>&1
 # Install gcc and related packages
 apk add linux-headers gcc build-base alpine-sdk 
 
@@ -71,17 +73,18 @@ then
     echo -e "${WARNING}[WARNING] - pip could not be found. Installing pip...${WHITE}"
     apk add py3-pip >/dev/null2>&1
     python3 -m ensurepip --upgrade >/dev/null2>&1
-    python3 -m pip install --upgrade wheel setuptools --break-system-packages >/dev/null2>&1
+    python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore >/dev/null2>&1
 fi
 
 # Start the setup
 echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
 # Install the necessary Alpine packages
-apk add cargo openblas-dev spi-tools musl-dev python3-dev py3-smbus py3-pillow
+apk add cargo openblas-dev spi-tools musl-dev python3-dev py3-smbus py3-pillow py3-numpy py3-opencv py3-scipy
 
 # Install the necessary Python packages (note: --break-system-packages is used to avoid conflicts with the system packages)
-pip install numpy opencv-python scipy scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
+#pip install opencv-python scipy scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
+pip install scikit-image pandas statsmodels plantcv influxdb_client configparser hx711 spidev RPi.GPIO Adafruit_GPIO --break-system-packages --root-user-action=ignore
 
 # Disable git ssl verification
 git config --global http.sslVerify false
@@ -92,8 +95,6 @@ cd Python_ST7735 || echo -e "${ERROR}[ERROR] - Could not find the Python_ST7735 
 python3 setup.py install
 cd ..; sudo rm -rf Python_ST7735
 echo -e "${INFO}[INFO] - Packages installed successfully.${WHITE}"
-
-# NOTE: problematic packages so far: opencv-python (requires python 3.11)
 
 echo -e "${INFO}[INFO] - Enabling SPI interface...${WHITE}"
 # Enable the SPI interface
