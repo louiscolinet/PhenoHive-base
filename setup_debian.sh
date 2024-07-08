@@ -42,7 +42,7 @@ fi
 if ! command -v git &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - git could not be found. Installing git...${WHITE}"
-    apt-get install git >/dev/null2>&1
+    apt-get -y install git >/dev/null2>&1
 fi
 
 # Check if 'python3' is installed, if not, install it
@@ -50,15 +50,14 @@ if ! command -v python3 &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - python3 could not be found. Installing python3...${WHITE}"
     # We need python3.11 as python3.12 is not supported yet by opencv-python
-    # TODO: Check if still necessary to install python3.11
-    apt-get install python3 >/dev/null2>&1
+    apt-get -y install python3.11 >/dev/null2>&1
 fi
 
 # Check if 'pip' is installed, if not, install it
 if ! command -v pip &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - pip could not be found. Installing pip...${WHITE}"
-     apt-get install python-pip >/dev/null2>&1
+    apt-get -y install python-pip >/dev/null2>&1
     python3 -m ensurepip --upgrade >/dev/null2>&1
     python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir >/dev/null2>&1
 fi
@@ -66,13 +65,13 @@ fi
 echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
 
-apt-get install build-essential #>> /dev/null 2>&1
-apt-get install python-dev #>> /dev/null 2>&1
-apt-get install python-smbus #>> /dev/null 2>&1
-apt-get install python-pip #>> /dev/null 2>&1
-apt-get install python-pil #>> /dev/null 2>&1
-apt-get install libatlas-base-dev PIP_FLAGS #>> /dev/null 2>&1
-#apt-get install python-numpy #>> /dev/null 2>&1 # TODO: check if pip in enough
+apt-get -y install build-essential #>> /dev/null 2>&1
+apt-get -y install python-dev #>> /dev/null 2>&1
+apt-get -y install python-smbus #>> /dev/null 2>&1
+apt-get -y install python-pip #>> /dev/null 2>&1
+apt-get -y install python-pil #>> /dev/null 2>&1
+apt-get -y install libatlas-base-dev #>> /dev/null 2>&1
+#apt-get -y install python-numpy #>> /dev/null 2>&1 # TODO: check if pip in enough
 
 # Install the necessary packages
 pip install numpy==1.23.5 PIP_FLAGS #>> /dev/null 2>&1
