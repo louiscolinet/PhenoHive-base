@@ -42,7 +42,7 @@ fi
 if ! command -v git &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - git could not be found. Installing git...${WHITE}"
-    apt install git >/dev/null2>&1
+    apt-get install git >/dev/null2>&1
 fi
 
 # Check if 'python3' is installed, if not, install it
@@ -51,14 +51,14 @@ then
     echo -e "${WARNING}[WARNING] - python3 could not be found. Installing python3...${WHITE}"
     # We need python3.11 as python3.12 is not supported yet by opencv-python
     # TODO: Check if still necessary to install python3.11
-    apt install python3 >/dev/null2>&1
+    apt-get install python3 >/dev/null2>&1
 fi
 
 # Check if 'pip' is installed, if not, install it
 if ! command -v pip &> /dev/null
 then
     echo -e "${WARNING}[WARNING] - pip could not be found. Installing pip...${WHITE}"
-     apt install python-pip >/dev/null2>&1
+     apt-get install python-pip >/dev/null2>&1
     python3 -m ensurepip --upgrade >/dev/null2>&1
     python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir >/dev/null2>&1
 fi
@@ -66,15 +66,15 @@ fi
 echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
 
-apt install build-essential #>> /dev/null 2>&1
-apt install python-dev #>> /dev/null 2>&1
-apt install python-smbus #>> /dev/null 2>&1
-apt install python-pip #>> /dev/null 2>&1
-apt install python-pil #>> /dev/null 2>&1
-#apt install python-numpy #>> /dev/null 2>&1 # TODO: check if pip in enough
+apt-get install build-essential #>> /dev/null 2>&1
+apt-get install python-dev #>> /dev/null 2>&1
+apt-get install python-smbus #>> /dev/null 2>&1
+apt-get install python-pip #>> /dev/null 2>&1
+apt-get install python-pil #>> /dev/null 2>&1
+apt-get install libatlas-base-dev PIP_FLAGS #>> /dev/null 2>&1
+#apt-get install python-numpy #>> /dev/null 2>&1 # TODO: check if pip in enough
 
 # Install the necessary packages
-apt install libatlas-base-dev PIP_FLAGS #>> /dev/null 2>&1
 pip install numpy==1.23.5 PIP_FLAGS #>> /dev/null 2>&1
 pip install opencv-python==4.6.0.66 PIP_FLAGS #>> /dev/null 2>&1
 pip install scipy==1.8.1 PIP_FLAGS #>> /dev/null 2>&1
