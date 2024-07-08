@@ -30,7 +30,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Ensure system is at the latest version
-apt update  >/dev/null2>&1
+apt-get update  >/dev/null2>&1
 
 # Check if the script is being run on a Debian-based system
 if [ ! -f /etc/debian_version ]; then
