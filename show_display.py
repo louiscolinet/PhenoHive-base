@@ -1,26 +1,53 @@
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from PhenoStation import PhenoStation
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
 
 
 class Display:
-    def __init__(self, disp, width: int, height: int) -> None:
+    def __init__(self, station: PhenoStation) -> None:
         """
         Initialize the class variables
-        :param disp: ST7735 display object
-        :param width: width of the display
-        :param height: height of the display
+        :param station: PhenoStation object
         """
-        self.DISP = disp
+        self.STATION = station
+        self.DISP = station.disp
         self.DISP.clear()
         self.DISP.begin()
-        self.WIDTH = width
-        self.HEIGHT = height
+        self.WIDTH = station.WIDTH
+        self.HEIGHT = station.HEIGHT
         self.SIZE = (self.WIDTH, self.HEIGHT)
         self.LOGO = Image.open(LOGO).rotate(0).resize((128, 70))
+
+    def get_status(self) -> str:
+        """
+        Return the color status of the station in function of its current status
+        :return: the color corresponding to the current status of the station
+                green = OK
+                blue = OK but not connected to the DB
+                yellow = processing
+                red = error
+        :throws:
+        """
+        match self.STATION.status:
+            case -1:
+                # Error
+                return "red"
+            case 1:
+                # Processing
+                return "yellow"
+            case 0:
+                # OK
+                if self.STATION.connected:
+                    return "green"
+                else:
+                    return "blue"
+            case _:
+                # Station status is not valid
+                raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
 
     def show_image(self, path_img: str) -> None:
         """
@@ -48,7 +75,9 @@ class Display:
         draw.text((0, 120), "Measurement n°" + str(n_rounds), font=font, fill=(0, 0, 0))
         draw.text((0, 100), "Weight : " + str(weight), font=font, fill=(0, 0, 0))
         draw.text((0, 110), "Growth : " + str(growth), font=font, fill=(0, 0, 0))
+        draw.text((0, 130), "<-- Status", font=font, fill=(0, 0, 0))
         draw.text((80, 130), "Stop -->", font=font, fill=(0, 0, 0))
+        # TODO: draw status
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
 
@@ -60,7 +89,7 @@ class Display:
         img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
         draw = ImageDraw.Draw(img)
         # Menu
-        font = ImageFont.truetype(FONT, 15)
+        font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Menu", font=font, fill=(0, 0, 0))
         # Button
         font = ImageFont.truetype(FONT, 10)
@@ -83,10 +112,10 @@ class Display:
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
 
-    def show_cal_menu(self, raw_weight, tare) -> None:
+    def show_cal_menu(self, weight, tare) -> None:
         """
         Show the calibration menu
-        :param raw_weight: current weight value
+        :param weight: current weight value
         :param tare: tare value
         :return:
         """
@@ -94,26 +123,56 @@ class Display:
         draw = ImageDraw.Draw(img)
         # Menu
         font = ImageFont.truetype(FONT, 10)
-        draw.text((0, 80), "Tare :" + str(tare), font=font, fill=(0, 0, 0))
-        draw.text((0, 95), "Raw val :" + str(raw_weight), font=font, fill=(0, 0, 0))
+        draw.text((0, 80), "Tare value:" + str(tare), font=font, fill=(0, 0, 0))
+        draw.text((0, 95), "Current value:" + str(weight), font=font, fill=(0, 0, 0))
+        draw.text((0, 110), "Net value:" + str(weight - tare), font=font, fill=(0, 0, 0))
         # Button
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Get Calib    Back -->", font=font, fill=(0, 0, 0))
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
 
-    def show_collecting_data(self, status):
+    def show_collecting_data(self, action):
         """
         Show the collecting data menu
-        :param status: status of the station (ex: "Taking photo...")
+        :param action: Current action performed by the station (ex: "Taking photo...")
         """
         img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
         draw = ImageDraw.Draw(img)
         # Menu
         font = ImageFont.truetype(FONT, 12)
         draw.text((5, 85), "Collecting data...", font=font, fill=(0, 0, 0))
-        if status != "":
+        if action != "":
             font = ImageFont.truetype(FONT, 8)
-            draw.text((5, 100), status, font=font, fill=(0, 0, 0))
+            draw.text((5, 100), action, font=font, fill=(0, 0, 0))
+        # TODO: draw status
+        img.paste(self.LOGO, (0, 0))
+        self.DISP.display(img)
+
+    def show_status(self) -> None:
+        """
+        Show the status menu
+        """
+        # Initialize display.
+        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
+        draw = ImageDraw.Draw(img)
+        # Title
+        font = ImageFont.truetype(FONT, 13)
+        draw.text((40, 80), "Status", font=font, fill=(0, 0, 0))
+        # Status
+        if self.get_status() == "green"
+            font = ImageFont.truetype(FONT, 8)
+            draw.text((5, 95), "OK", font=font, fill=(0, 0, 0))
+        elif self.get_status() == "blue"
+            font = ImageFont.truetype(FONT, 8)
+            draw.text((5, 95), "Not connected to the DB", font=font, fill=(0, 0, 0))
+        if self.get_status() == "red"
+            font = ImageFont.truetype(FONT, 8)
+            draw.text((5, 95), f"Error at {self.STATION.last_error[0]}", font=font, fill=(0, 0, 0))
+            draw.text((5, 110), f"{self.STATION.last_error[1]}", font=font, fill=(0, 0, 0))
+
+        # Button
+        font = ImageFont.truetype(FONT, 10)
+        draw.text((0, 130), "<-- Stop         Resume -->", font=font, fill=(0, 0, 0))
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
