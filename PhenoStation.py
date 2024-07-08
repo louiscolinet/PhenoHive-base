@@ -1,6 +1,7 @@
 import base64
 import configparser
 import os
+import statistics
 import time
 import datetime
 import Adafruit_GPIO.SPI as SPI
@@ -43,6 +44,8 @@ class PhenoStation:
     load_cell_cal = None
     tare = None
     connected = False  # True if the station is connected to influxDB
+    status = 0  # Current station status (-1= Error, 0 = OK, 1 = Processing)
+    last_error = None  # Last error registered as a tuple of the form (timestamp: str, e:Exception)
 
     # Station constants
     WIDTH = 128
@@ -55,8 +58,6 @@ class PhenoStation:
     LED = 23
     BUT_LEFT = 21
     BUT_RIGHT = 16
-
-    WEIGHT_FILE = "data/weight_values.csv"
 
     def __init__(self) -> None:
         """
@@ -84,6 +85,7 @@ class PhenoStation:
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.connected = self.client.ping()
+        self.last_connection = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         LOGGER.debug(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}" +
                      f", Ping returned : {self.connected}")
 
@@ -98,7 +100,7 @@ class PhenoStation:
                 max_speed_hz=self.SPEED_HZ
             )
         )
-        self.disp = Display(self.st7735, self.WIDTH, self.HEIGHT)
+        self.disp = Display(self)
         self.disp.show_image("assets/logo_elia.jpg")
 
         # Hx711
@@ -107,7 +109,7 @@ class PhenoStation:
             LOGGER.debug("Resetting HX711")
             self.hx.reset()
         except hx711.GenericHX711Exception as e:
-            LOGGER.error(f"Error while resetting HX711 : {e}")
+            self.register_error(Exception(f"Error while resetting HX711 : {e}"))
         else:
             LOGGER.debug("HX711 reset")
 
@@ -125,11 +127,6 @@ class PhenoStation:
         # Button init
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-        # Create the weight_values.csv file if it doesn't exist
-        if not os.path.exists(self.WEIGHT_FILE):
-            columns = ["date", "median_weight", "elapsed_time"] + [f"raw_data_{i}" for i in range(1000)]
-            save_to_csv(columns, self.WEIGHT_FILE)
 
     def send_to_db(self, point: str, field: str, value) -> None:
         """
@@ -156,16 +153,31 @@ class PhenoStation:
                 p = Point(point).field(field, int(value))
             write_api.write(bucket=self.bucket, record=p)
 
+    def register_error(self, exception: Exception) -> None:
+        """
+        Register an exception by logging it, updating the station's status and sending it to the DB
+        :param exception: The exception that occurred
+        """
+        LOGGER.error(f"Error : {exception}")
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.status = -1
+        self.last_error = (timestamp, exception)
+        self.send_to_db("Error", "StationID_%s" % self.station_id, str(exception))
+
     def reconnect(self) -> bool:
         """
         Try to reconnect to the InfluxDB and send the data saved in the csv files
         :return: True if the connection is successful, False otherwise
                  If the connection is successful, the data saved in the csv files are sent to the DB
         """
-        ping = self.client.ping()
+        return self.client.ping()
+        """
+        TODO: currently disabled
+        Instead, we will always save each data in a csv
+        If we lost connection, we will open the csvs and send from the last timestamp (stored in self.last_connected)
         if not ping:
             return False
-        for file in os.listdir("data/"):
+        for file in os.listdir("data/pending/"):
             if file.endswith(".csv"):
                 with open(f"data/{file}", "r") as f:
                     lines = f.readlines()
@@ -188,6 +200,7 @@ class PhenoStation:
                 new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
                 os.rename(f"data/{file}", f"{new_name}")
         return True
+        """
 
     def get_weight(self) -> float:
         """
@@ -196,10 +209,9 @@ class PhenoStation:
         """
         raw_data = self.hx.get_raw_data()
         if not raw_data:
-            LOGGER.error("Error while getting raw data (no data)")
+            self.register_error(Exception("Error while getting raw data (no data), check load cell connection"))
             return -1
-        raw_weight = sum(raw_data) / len(raw_data)
-        return raw_weight
+        return statistics.median(raw_data)
 
     def capture_and_display(self) -> tuple[str, str]:
         """
@@ -242,7 +254,7 @@ class PhenoStation:
         try:
             self.cam.capture_file(file_output=path_img)
         except Exception as e:
-            LOGGER.error(f"Error while capturing the photo: {e}")
+            self.register_error(Exception(f"Error while capturing the photo: {e}"))
             path_img = ""
         self.cam.stop_preview()
         self.cam.stop()
@@ -254,6 +266,7 @@ class PhenoStation:
         :return: a tuple with the growth value and the weight
         """
         LOGGER.info("Starting measurement pipeline")
+        self.status = 1
         self.disp.show_collecting_data("Starting measurement pipeline")
         time.sleep(1)
 
@@ -262,7 +275,7 @@ class PhenoStation:
             self.disp.show_collecting_data("Taking photo")
             pic, growth_value = self.picture_pipeline()
         except Exception as e:
-            LOGGER.error(f"Error while taking the photo: {e}")
+            self.register_error(Exception(f"Error while taking the photo: {e}"))
             self.disp.show_collecting_data("Error while taking the photo")
             time.sleep(5)
             return 0, 0
@@ -275,7 +288,7 @@ class PhenoStation:
             self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
             time.sleep(2)
         except Exception as e:
-            LOGGER.error(f"Error while getting the weight: {e}")
+            self.register_error(Exception(f"Error while getting the weight: {e}"))
             self.disp.show_collecting_data("Error while getting the weight")
             time.sleep(5)
             return 0, 0
@@ -288,7 +301,7 @@ class PhenoStation:
             self.disp.show_collecting_data("Data sent to the DB")
             time.sleep(2)
         except Exception as e:
-            LOGGER.error(f"Error while sending data to the DB: {e}")
+            self.register_error(Exception(f"Error while sending data to the DB: {e}"))
             self.disp.show_collecting_data("Error while sending data to the DB")
             time.sleep(5)
             return 0, 0
@@ -296,6 +309,7 @@ class PhenoStation:
         LOGGER.info("Measurement pipeline finished")
         self.disp.show_collecting_data("Measurement pipeline finished")
         time.sleep(1)
+        self.status = 0
         return growth_value, weight
 
     def picture_pipeline(self) -> tuple[str, int]:
@@ -316,30 +330,23 @@ class PhenoStation:
             time.sleep(2)
         return pic, growth_value
 
-    def weight_pipeline(self):
+    def weight_pipeline(self, n=10) -> float:
         """
         Weight collection pipeline
-        :return: the weight of the plant
+        :param n: The number of measurements to take (default = 10)
+        :return: The median weight from the collected measurements
         """
-        collected = [datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")]
-
-        self.disp.show_collecting_data("Getting weight (1000)")
+        self.disp.show_collecting_data("Measuring weight")
         start = time.time()
         weights = []
-        for _ in range(1000):
-            # Collect 1000 raw data
+        for _ in range(n):
+            # Collect n measurements
             weights.append(self.get_weight())
         elapsed = time.time() - start
 
         # Compute the median weight
-        median = sorted(weights)[len(weights) // 2]
-        collected.append(median)
-        collected.append(elapsed)
-        LOGGER.debug(f"Weight (median) : {median} in {elapsed}s")
-        collected += weights
-
-        # Store the data in a csv file
-        save_to_csv(collected, self.WEIGHT_FILE)
+        median = statistics.median(weights)
+        LOGGER.debug(f"Weight: {median} in {elapsed}s")
         return median
 
     def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
@@ -367,8 +374,8 @@ class DebugHx711(hx711.HX711):
         return super()._read(times)
 
     def get_raw_data(self, times=5):
-        # Custom read function to debug (with a max of 100 tries)
-        # start = time.time()
+        # Custom read function to debug (with a max of 100 tries) to avoid infinite loops
+        # Furthermore, we check if the data is valid (not False or -1) before appending it to the list
         data_list = []
         count = 0
         while len(data_list) < times and count < 1000:
@@ -376,5 +383,4 @@ class DebugHx711(hx711.HX711):
             if data not in [False, -1]:
                 data_list.append(data)
             count += 1
-        # LOGGER.debug(f"Time to get {len(data_list)} raw data : {round(time.time() - start)} seconds, in {count} tries")
         return data_list
