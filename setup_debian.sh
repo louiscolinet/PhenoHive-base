@@ -22,12 +22,19 @@ echo -e "${INFO}[INFO] - PhenoHive Setup Script.\n" \
 read -n 1 -s -r -p ""
 
 # Check that the device is connected to the internet
+if ! ping -q -c 1 -W 1 google.com &> /dev/null
+then
+    echo -e "${ERROR}[ERROR] - Please ensure that the Raspberry Pi is connected to the internet before running this script.${WHITE}"
+    exit
+fi
 
 # Check if the script is being run as root
 if [ "$EUID" -ne 0 ]
   then echo -e "${ERROR}[ERROR] - Please run as root: sudo bash setup.sh${WHITE}"
   exit
 fi
+
+echo -e "${INFO}[INFO] - Running pre-setup checks...${WHITE}"
 
 # Ensure system is at the latest version
 apt-get update  >/dev/null2>&1
