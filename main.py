@@ -9,6 +9,7 @@ import datetime
 import RPi.GPIO as GPIO
 import argparse
 import logging
+from statistics import median
 
 CONFIG_FILE = "config.ini"
 LOGGER = None
@@ -21,6 +22,7 @@ def main() -> None:
     LOGGER.info("Initializing the station")
     station = PhenoStation()  # Initialize the station
     n_round = 0
+    error_count = 0
 
     while True:
         is_shutdown = int(station.parser['Var_Verif']["is_shutdown"])
@@ -28,8 +30,16 @@ def main() -> None:
         try:
             handle_button_presses(station, is_shutdown, n_round)
         except Exception as e:
-            LOGGER.error(f"Error : {e}")
-            time.sleep(5)
+            error_count += 1
+            PhenoStation.register_error(e)
+            PhenoStation.status(-1)
+            if error_count < 10:
+                # Reached unhandled error threshold, exiting the program
+                error_count = 0
+                LOGGER.critical("Critical: too many exception raised, exiting.")
+                raise RuntimeError("Too many exception raised, exiting. Check logs for more details.")
+            else:
+                time.sleep(5)
 
 
 def handle_button_presses(station: PhenoStation, is_shutdown: int, n_round: int) -> None:
@@ -87,13 +97,11 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     Calibration loop
     :param station: station object
     """
-    def tare(n: int = 1) -> float:
+    def tare(n: int = 20) -> float:
         """
-        Collect the weight from the load cell with a filter (if n > 1)
-        The collected weight is the average of the collected measurements, where only the values between the 25th and
-        75th percentile are kept
-        :param n: number of measurements to take (default: 1)
-        :return: The weight collected from the load cell (filtered if n > 1, raw otherwise)
+        Collect the weight from the load cell for calibration
+        :param n: number of measurements to take (default: 20)
+        :return: The median value of the measurements from the load cell
         """
         # Start the measurement
         weight_list = []
@@ -101,34 +109,16 @@ def handle_calibration_loop(station: PhenoStation) -> None:
             weight = station.get_weight() - station.tare
             weight_list.append(weight)
 
-        if n == 1:
-            return weight_list[0]
+        # Return the median value of the list
+        return median(weight_list)
 
-        # Filter the weight list, removing the outliers (keep only the values between the 25th and 75th percentile)
-        # This is done to avoid the noise and abnormal values from the load cell
-        weight_list.sort()
-        q1 = weight_list[int(len(weight_list) / 4)]
-        q3 = weight_list[int(3 * len(weight_list) / 4)]
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        weight_list = [x for x in weight_list if lower_bound <= x <= upper_bound]
-
-        # Compute the average weight from the filtered list
-        filtered_value = sum(weight_list) / len(weight_list)
-
-        # Return the filtered value
-        return filtered_value
-    
-    # station.tare = station.get_weight()  # Deprecated
-    station.tare = tare(100)
+    station.tare = tare()
     station.parser['cal_coef']["tare"] = str(station.tare)
     raw_weight = 0
     while True:
         station.disp.show_cal_menu(raw_weight, station.tare)
         if not GPIO.input(station.BUT_LEFT):
             raw_weight = station.get_weight()
-            # TODO: check relevance of 1500 (and more generally of the load_cell_cal parameter)
             station.load_cell_cal = 1500 / (raw_weight - station.tare)
             station.parser['cal_coef']["load_cell_cal"] = str(station.load_cell_cal)
             with open(CONFIG_FILE, 'w') as configfile:
