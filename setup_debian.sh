@@ -36,6 +36,10 @@ fi
 
 echo -e "${INFO}[INFO] - Running pre-setup checks...${WHITE}"
 
+# Remove apt compression to speed up the process
+echo 'Acquire::GzipIndexes "false";' > /etc/apt/apt.conf.d/98dietpi-uncompressed
+/boot/dietpi/func/dietpi-set_software apt-cache clean
+
 # Ensure system is at the latest version
 apt-get update  >/dev/null2>&1
 
