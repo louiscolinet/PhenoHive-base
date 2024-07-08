@@ -2,84 +2,109 @@
 # Setup script for the PhenoHive project
 # This script installs the necessary packages and enables the SPI interface on the Raspberry Pi
 # It also sets up the PhenoHive service to run on boot
-# It is intended to be run on a fresh install of Raspbian
+# It is intended to be run on a fresh install on a Debian Linux Distribution (Raspbian or DietPi)
+
+# Color codes for the outputs
+ERROR='\033[0;31m'
+WARNING='\033[1;33m'
+INFO='\033[0;36m'
+WHITE='\033[0m'
+
+# Pip flags
+PIP_FLAGS=(--break-system-packages --root-user-action=ignore --no-cache-dir)
+
+echo -e "${INFO}[INFO] - PhenoHive Setup Script.\n" \
+        "\t This script installs the necessary packages and enables the SPI interface.\n" \
+        "\t It also sets up the PhenoHive service to run on boot.\n" \
+        "\t It is intended to be run on a fresh install of a Debian Linux Distribution (DietPi or Raspbian) running on a Raspberry Pi Zero W.\n" \
+        "\t Please ensure that the Raspberry Pi is connected to the internet before running this script.\n" \
+        "\t Press any key to continue...${WHITE}"
+read -n 1 -s -r -p ""
+
+# Check that the device is connected to the internet
 
 # Check if the script is being run as root
 if [ "$EUID" -ne 0 ]
-  then echo "Please run as root: sudo ./setup.sh"
+  then echo -e "${ERROR}[ERROR] - Please run as root: sudo bash setup.sh${WHITE}"
   exit
 fi
 
+# Ensure system is at the latest version
+apt update  >/dev/null2>&1
+
 # Check if the script is being run on a Debian-based system
 if [ ! -f /etc/debian_version ]; then
-    echo "This script is intended to run on a Debian-based system."
+    echo -e "${ERROR}[ERROR] - This script is intended to run on a Debian Linux Distribution.${WHITE}"
     exit
 fi
 
-# Progress bar function
-function progress {
-    bar="##################################################"
-    barlength=${#bar}
-    n=$(($1*barlength/100))
-    printf "\r[%-${barlength}s (%d%%)] " "${bar:0:n}" "$1"
-}
+# Check if 'git' is installed, if not, install it
+if ! command -v git &> /dev/null
+then
+    echo -e "${WARNING}[WARNING] - git could not be found. Installing git...${WHITE}"
+    apt install git >/dev/null2>&1
+fi
+
+# Check if 'python3' is installed, if not, install it
+if ! command -v python3 &> /dev/null
+then
+    echo -e "${WARNING}[WARNING] - python3 could not be found. Installing python3...${WHITE}"
+    # We need python3.11 as python3.12 is not supported yet by opencv-python
+    # TODO: Check if still necessary to install python3.11
+    apt install python3 >/dev/null2>&1
+fi
+
+# Check if 'pip' is installed, if not, install it
+if ! command -v pip &> /dev/null
+then
+    echo -e "${WARNING}[WARNING] - pip could not be found. Installing pip...${WHITE}"
+     apt install python-pip >/dev/null2>&1
+    python3 -m ensurepip --upgrade >/dev/null2>&1
+    python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir >/dev/null2>&1
+fi
+
+echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
 
-# Create virtual environment
-echo "Creating virtual environment..."
-python3 -m venv venv >> /dev/null 2>&1
-source venv/bin/activate >> /dev/null 2>&1
-echo "Virtual environment created successfully."
+apt install build-essential #>> /dev/null 2>&1
+apt install python-dev #>> /dev/null 2>&1
+apt install python-smbus #>> /dev/null 2>&1
+apt install python-pip #>> /dev/null 2>&1
+apt install python-pil #>> /dev/null 2>&1
+#apt install python-numpy #>> /dev/null 2>&1 # TODO: check if pip in enough
 
-echo "Installing necessary packages..."
 # Install the necessary packages
-
-progress 0
-apt-get update >> /dev/null 2>&1
-progress 6
-apt-get install libatlas-base-dev >> /dev/null 2>&1
-progress 12
-pip install numpy==1.23.5 >> /dev/null 2>&1
-progress 18
-pip install opencv-python==4.6.0.66 >> /dev/null 2>&1
-progress 24
-pip install scipy==1.8.1 >> /dev/null 2>&1
-progress 30
-pip install scikit-image==0.19.3 >> /dev/null 2>&1
-progress 36
-pip install pandas==2.0.0 >> /dev/null 2>&1
-progress 42
-pip install statsmodels==0.13.5 >> /dev/null 2>&1
-progress 48
-pip install plantcv >> /dev/null 2>&1
-progress 54
-pip install influxdb_client >> /dev/null 2>&1
-progress 60
-pip install configparser >> /dev/null 2>&1
-progress 66
-pip install hx711 >> /dev/null 2>&1
-progress 72
+apt install libatlas-base-dev PIP_FLAGS #>> /dev/null 2>&1
+pip install numpy==1.23.5 PIP_FLAGS #>> /dev/null 2>&1
+pip install opencv-python==4.6.0.66 PIP_FLAGS #>> /dev/null 2>&1
+pip install scipy==1.8.1 PIP_FLAGS #>> /dev/null 2>&1
+pip install scikit-image==0.19.3 PIP_FLAGS #>> /dev/null 2>&1
+pip install pandas==2.0.0 PIP_FLAGS #>> /dev/null 2>&1
+pip install statictics
+pip install statsmodels==0.13.5 PIP_FLAGS #>> /dev/null 2>&1
+pip install plantcv PIP_FLAGS #>> /dev/null 2>&1
+pip install influxdb_client PIP_FLAGS #>> /dev/null 2>&1
+pip install configparser PIP_FLAGS #>> /dev/null 2>&1
+pip install hx711 PIP_FLAGS #>> /dev/null 2>&1
+pip install RPi.GPIO PIP_FLAGS #>> /dev/null 2>&1
+pip install Adafruit_GPIO PIP_FLAGS #>> /dev/null 2>&1
 
 # Install the ST7735 library
-sudo apt-get install build-essential python-dev python-smbus python-pip python-pil python-numpy  >> /dev/null 2>&1
-progress 78
-pip install RPi.GPIO Adafruit_GPIO >> /dev/null 2>&1
-progress 84
 git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
-cd Python_ST7735 || echo "Error: Could not find the Python_ST7735 directory"; exit
+cd Python_ST7735 || echo -e "${ERROR}[ERROR] - Python_ST335 could not be installed: Could not find directory.${WHITE}"
 python setup.py install >> /dev/null 2>&1
-progress 90
-cd ..; rm -rf Python_ST7735 >> /dev/null 2>&1
-apt-get autoremove >> /dev/null 2>&1
-progress 100
-echo "Packages installed successfully."
 
-echo "Enabling SPI interface..."
+# Cleanup unnecessary packages and directory
+cd ..; rm -rf Python_ST7735 #>> /dev/null 2>&1
+apt-get autoremove #>> /dev/null 2>&1
+echo -e "${INFO}[INFO] - Packages installed successfully.${WHITE}"
+
+echo -e "${INFO}[INFO] - Enabling SPI interface...${WHITE}"
 # Enable the SPI interface
 raspi-config nonint do_spi 0
-echo "SPI interface enabled."
+# echo "dtparam=spi=on" | sudo tee -a /boot/config.txt
 
-echo "Setting up PhenoHive service..."
+echo -e "${INFO}[INFO] - Setting up PhenoHive service...${WHITE}"
 # Copy the service file to the systemd directory
 cp phenoHive.service /etc/systemd/system
 chmod 644 /etc/systemd/system/phenoHive.service
@@ -88,9 +113,9 @@ chmode +x /home/pi/PhenoHive/main.py
 systemctl daemon-reload
 # Enable the service
 systemctl enable phenoHive.service
-echo "PhenoHive service set up successfully."
+echo -e "${INFO}PhenoHive service set up successfully.${WHITE}"
 
 # Setup complete, reboot the Raspberry Pi
-echo "Setup complete. Push any key to reboot the Raspberry Pi."
+echo -e "${INFO}Setup complete. Push any key to reboot the Raspberry Pi.${WHITE}"
 read -n 1 -s -r -p ""
-sudo reboot
+#sudo reboot
