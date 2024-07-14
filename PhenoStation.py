@@ -21,8 +21,12 @@ LOGGER = logging.getLogger("PhenoStation")
 
 class PhenoStation:
     """
-    PhenoStation class, contains all the variables and functions of the station
+    PhenoStation class, contains all the variables and functions of the station.
+    It functions as a singleton. Use PhenoStation.get_instance() method to get an instance.
     """
+    # Instance class variable for singleton
+    _instance = None
+
     # Station variables
     parser = None
     station_id = None
@@ -59,10 +63,28 @@ class PhenoStation:
     BUT_LEFT = 21
     BUT_RIGHT = 16
 
+    @staticmethod
+    def get_instance():
+        """
+        Static access method to create a new instance of the station if not already initialized.
+        Otherwise, return the current instance.
+        :return: A PhenoStation instance
+        """
+        if PhenoStation._instance is None:
+            PhenoStation()
+        return PhenoStation._instance
+
     def __init__(self) -> None:
         """
         Initialize the station
+        :raises RuntimeError: If trying to instantiate a new PhenoStation if one was already instantiated
+                                (use get_instance() instead)
         """
+        if PhenoStation._instance is not None:
+            raise RuntimeError("PhenoStation class is a singleton. Use PhenoStation.get_instance() to initiate it.")
+        else:
+            PhenoStation._instance = self
+
         # Parse Config.ini file
         self.parser = configparser.ConfigParser()
         self.parser.read('config.ini')

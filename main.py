@@ -20,7 +20,7 @@ def main() -> None:
     Main function, initialize the station and start the main loop
     """
     LOGGER.info("Initializing the station")
-    station = PhenoStation()  # Initialize the station
+    station = PhenoStation.get_instance()  # Initialize the station
     n_round = 0
     error_count = 0
 

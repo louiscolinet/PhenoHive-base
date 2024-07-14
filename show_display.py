@@ -8,17 +8,16 @@ LOGO = "assets/logo_phenohive.jpg"
 
 
 class Display:
-    def __init__(self, station: PhenoStation) -> None:
+    def __init__(self) -> None:
         """
         Initialize the class variables
-        :param station: PhenoStation object
         """
-        self.STATION = station
-        self.DISP = station.disp
+        self.STATION = PhenoStation.get_instance()
+        self.DISP = self.STATION.disp
         self.DISP.clear()
         self.DISP.begin()
-        self.WIDTH = station.WIDTH
-        self.HEIGHT = station.HEIGHT
+        self.WIDTH = self.STATION.WIDTH
+        self.HEIGHT = self.STATION.HEIGHT
         self.SIZE = (self.WIDTH, self.HEIGHT)
         self.LOGO = Image.open(LOGO).rotate(0).resize((128, 70))
 
@@ -30,7 +29,7 @@ class Display:
                 blue = OK but not connected to the DB
                 yellow = processing
                 red = error
-        :throws:
+        :raises: ValueError: If the station's status incorrect (not -1, 0, or 1)
         """
         match self.STATION.status:
             case -1:
