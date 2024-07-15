@@ -75,9 +75,7 @@ fi
 echo -e "${INFO}Installing necessary packages...${WHITE}"
 
 apt-get -y install build-essential python3-dev python3-smbus python3-pil libatlas-base-dev python3-numpy python3-opencv \
-            python3-opencv python3-scipy python3-scikit-image python3-pandas python3-statictics python3-statsmodels \
-            python3-plantcv python3-influxdb_client python3-configparser python3-hx711 python3-RPi.GPIO \
-            python3-Adafruit_GPIO #>> /dev/null 2>&1
+            python3-opencv python3-scipy python3-pandas python3-statsmodels #>> /dev/null 2>&1
 
 # Upgrade pip, wheel and setuptools before installing the necessary packages
 pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir #>/dev/null2>&1
@@ -86,16 +84,16 @@ pip install --upgrade wheel setuptools --break-system-packages --root-user-actio
 #pip install numpy==1.23.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install opencv-python==4.6.0.66 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install scipy==1.8.1 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install scikit-image==0.19.3 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install pandas==2.0.0 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install statictics --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install statsmodels==0.13.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+#pip install pandas==2.0.0 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install scikit-image==0.19.3 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install statictics --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 
 # Install the ST7735 library
 git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
@@ -116,14 +114,14 @@ echo -e "${INFO}Setting up PhenoHive service...${WHITE}"
 # Copy the service file to the systemd directory
 cp tools/phenoHive.service /etc/systemd/system
 chmod 644 /etc/systemd/system/phenoHive.service
-chmode +x main.py
+chmod +x main.py
 # Reload the systemd manager configuration
 systemctl daemon-reload
 # Enable the service
 systemctl enable phenoHive.service
 echo -e "${INFO}PhenoHive service set up successfully.${WHITE}"
 
-echp -e "${INFO}Calibration should be done once before running the main program.\n" \
+echo -e "${INFO}Calibration should be done once before running the main program.\n" \
         "\t Do you want to launch the calibration script now ? [Y/n]${WHITE}"
 
 read -n 1 -s -r -p ""
