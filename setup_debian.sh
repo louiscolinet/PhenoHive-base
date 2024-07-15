@@ -10,6 +10,8 @@ WARNING='\033[1;33m'
 INFO='\033[0;36m'
 WHITE='\033[0m'
 
+PIP_FLAGS='--break-system-packages --root-user-action=ignore --no-cache-dir'
+
 echo -e "${INFO}[INFO] - PhenoHive Setup Script.\n" \
         "\t This script installs the necessary packages and enables the SPI interface.\n" \
         "\t It also sets up the PhenoHive service to run on boot.\n" \
@@ -70,30 +72,29 @@ then
     echo -e "${WARNING}[WARNING] - pip could not be found. Installing pip...${WHITE}"
     apt-get -y install python3-pip >/dev/null2>&1
     python3 -m ensurepip --upgrade >/dev/null2>&1
-    python3 -m pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir >/dev/null2>&1
 fi
 
 echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
-apt-get -y install build-essential #>> /dev/null 2>&1
-apt-get -y install python3-dev #>> /dev/null 2>&1
-apt-get -y install python3-smbus #>> /dev/null 2>&1
-apt-get -y install libatlas-base-dev #>> /dev/null 2>&1
+apt-get -y install build-essential python3-dev python3-smbus python3-pil libatlas-base-dev #>> /dev/null 2>&1
+
+# Upgrade pip, wheel and setuptools before installing the necessary packages
+pip install --upgrade wheel setuptools "$PIP_FLAGS" >/dev/null2>&1
 
 # Install the necessary packages
-pip install numpy==1.23.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install opencv-python==4.6.0.66 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install scipy==1.8.1 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install scikit-image==0.19.3 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install pandas==2.0.0 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install statictics --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install statsmodels==0.13.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install numpy==1.23.5 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install opencv-python==4.6.0.66 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install scipy==1.8.1 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install scikit-image==0.19.3 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install pandas==2.0.0 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install statictics "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install statsmodels==0.13.5 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install plantcv "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install influxdb_client "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install configparser "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install hx711 "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install RPi.GPIO "$PIP_FLAGS" #>> /dev/null 2>&1
+pip install Adafruit_GPIO "$PIP_FLAGS" #>> /dev/null 2>&1
 
 # Install the ST7735 library
 git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
