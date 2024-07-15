@@ -38,7 +38,7 @@ echo 'Acquire::GzipIndexes "false";' > /etc/apt/apt.conf.d/98dietpi-uncompressed
 /boot/dietpi/func/dietpi-set_software apt-cache clean
 
 # Ensure system is at the latest version
-apt-get update  >/dev/null2>&1
+apt-get update >/dev/null2>&1
 
 # Check if the script is being run on a Debian-based system
 if [ ! -f /etc/debian_version ]; then
@@ -73,8 +73,8 @@ fi
 echo -e "${INFO}[INFO] - Installing necessary packages...${WHITE}"
 
 apt-get -y install build-essential #>> /dev/null 2>&1
-apt-get -y install python-dev #>> /dev/null 2>&1
-apt-get -y install python-smbus #>> /dev/null 2>&1
+apt-get -y install python3-dev #>> /dev/null 2>&1
+apt-get -y install python3-smbus #>> /dev/null 2>&1
 apt-get -y install libatlas-base-dev #>> /dev/null 2>&1
 
 # Install the necessary packages
