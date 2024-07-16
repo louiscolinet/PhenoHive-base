@@ -74,10 +74,31 @@ fi
 
 echo -e "${INFO}Installing necessary packages...${WHITE}"
 
-apt-get -y install build-essential libatlas-base-dev patchelf ninja-build cmake python3-dev python3-smbus python3-pil
+apt-get -y install \
+ build-essential \
+ cmake \
+ cargo \
+ gfortran \
+ libopenblas-dev \
+ libatlas-base-dev\
+ patchelf \
+ ninja-build \
+ meson-python \
+ python3-dev \
+ python3-smbus \
+ python3-pil
 
-apt-get -y install python3-numpy python3-opencv python3-opencv python3-scipy python3-pandas python3-statsmodels \
-                   python3-influxdb-client python3-rpi.gpio python3-sklearn python3-skimage
+apt-get -y install \
+ python3-numpy \
+ python3-opencv \
+ python3-opencv \
+ python3-scipy \
+ python3-pandas \
+ python3-statsmodels \
+ python3-influxdb-client \
+ python3-rpi.gpio \
+ python3-sklearn \
+ python3-skimage
 
 # Upgrade pip, wheel and setuptools before installing the python packages
 pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir #>/dev/null2>&1
@@ -89,11 +110,13 @@ pip install --upgrade wheel setuptools --break-system-packages --root-user-actio
 #pip install pandas==2.0.0 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install scikit-image --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+#pip install cython --break-system-packages --root-user-action=ignore --no-cache-dir --no-build-isolation #>> /dev/null 2>&1
+pip install \
+ influxdb_client \
+ plantcv \
+ configparser \
+ hx711 \
+ Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir --no-build-isolation #>> /dev/null 2>&1
 
 # Install the ST7735 library
 git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
