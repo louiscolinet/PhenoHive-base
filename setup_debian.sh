@@ -75,7 +75,7 @@ fi
 echo -e "${INFO}Installing necessary packages...${WHITE}"
 
 apt-get -y install build-essential python3-dev python3-smbus python3-pil libatlas-base-dev python3-numpy python3-opencv \
-            python3-opencv python3-scipy python3-pandas python3-statsmodels #>> /dev/null 2>&1
+            python3-opencv python3-scipy python3-pandas python3-statsmodels patchelf ninja #>> /dev/null 2>&1
 
 # Upgrade pip, wheel and setuptools before installing the necessary packages
 pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir #>/dev/null2>&1
