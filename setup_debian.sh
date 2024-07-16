@@ -74,10 +74,10 @@ fi
 
 echo -e "${INFO}Installing necessary packages...${WHITE}"
 
-apt-get -y install build-essential libatlas-base-dev patchelf ninja ninja-build python3-dev python3-smbus python3-pil
+apt-get -y install build-essential libatlas-base-dev patchelf ninja-build cmake python3-dev python3-smbus python3-pil
 
 apt-get -y install python3-numpy python3-opencv python3-opencv python3-scipy python3-pandas python3-statsmodels \
-                   python3-influxdb-client python3-rpi.gpio python3-skimage python-statictics #>> /dev/null 2>&1
+                   python3-influxdb-client python3-rpi.gpio python3-sklearn python3-skimage
 
 # Upgrade pip, wheel and setuptools before installing the python packages
 pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir #>/dev/null2>&1
@@ -87,10 +87,9 @@ pip install --upgrade wheel setuptools --break-system-packages --root-user-actio
 #pip install scipy==1.8.1 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install statsmodels==0.13.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install pandas==2.0.0 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install scikit-image --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-#pip install statictics --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
@@ -108,8 +107,18 @@ echo -e "${INFO}Packages installed successfully.${WHITE}"
 
 echo -e "${INFO}Enabling SPI interface...${WHITE}"
 # Enable the SPI interface
-raspi-config nonint do_spi 0
-# echo "dtparam=spi=on" | sudo tee -a /boot/config.txt
+
+# Check if on a raspbian system
+if [ -f /etc/os-release ]; then
+    source /etc/os-release
+    if [[ $ID != "raspbian" ]]; then
+        # On a raspbian system, use raspi-config to enable SPI
+        raspi-config nonint do_spi 0
+    else
+        # On a dietpi or other non-raspbian system, enable the SPI interface in the config file
+        echo "dtparam=spi=on" | sudo tee -a /boot/config.txt
+    fi
+fi
 
 echo -e "${INFO}Setting up PhenoHive service...${WHITE}"
 # Copy the service file to the systemd directory
