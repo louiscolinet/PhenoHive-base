@@ -74,25 +74,26 @@ fi
 
 echo -e "${INFO}Installing necessary packages...${WHITE}"
 
-apt-get -y install build-essential python3-dev python3-smbus python3-pil libatlas-base-dev python3-numpy python3-opencv \
-            python3-opencv python3-scipy python3-pandas python3-statsmodels patchelf ninja #>> /dev/null 2>&1
+apt-get -y install build-essential libatlas-base-dev patchelf ninja ninja-build python3-dev python3-smbus python3-pil
 
-# Upgrade pip, wheel and setuptools before installing the necessary packages
+apt-get -y install python3-numpy python3-opencv python3-opencv python3-scipy python3-pandas python3-statsmodels \
+                   python3-influxdb-client python3-rpi.gpio #>> /dev/null 2>&1
+
+# Upgrade pip, wheel and setuptools before installing the python packages
 pip install --upgrade wheel setuptools --break-system-packages --root-user-action=ignore --no-cache-dir #>/dev/null2>&1
 
-# Install the necessary packages
 #pip install numpy==1.23.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install opencv-python==4.6.0.66 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install scipy==1.8.1 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install statsmodels==0.13.5 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 #pip install pandas==2.0.0 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install scikit-image==0.19.3 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+#pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+#pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
+pip install scikit-image --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install statictics --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install plantcv --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install influxdb_client --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install configparser --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install hx711 --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
-pip install RPi.GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 pip install Adafruit_GPIO --break-system-packages --root-user-action=ignore --no-cache-dir #>> /dev/null 2>&1
 
 # Install the ST7735 library
