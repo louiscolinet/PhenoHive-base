@@ -1,0 +1,5 @@
+influxdb_client
+plantcv
+configparser
+hx711
+Adafruit_GPIO
