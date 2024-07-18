@@ -4,8 +4,11 @@
 # It also sets up the PhenoHive service to run on boot
 # It is intended to be run on a fresh install on a Debian Linux Distribution (Raspbian or DietPi)
 
-LOG_FILE="/var/log/phenoHive_setup.log"
+LOG_FILE="logs/phenoHive_setup_$(date +%Y-%m-%d_%H-%M-%S).log"
 CONFIG_FILE="tools/setup.config"
+
+# Redirect output to both the log file and stdout with timestamps
+exec > >(awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' | tee -a "$LOG_FILE") 2>&1
 
 # Color codes for the outputs
 ERROR='\033[0;31m'
@@ -88,12 +91,12 @@ setup_service() {
     systemctl enable phenoHive.service
 }
 
-echo -e "${INFO}PhenoHive setup script.\n" \
-        "\t This script installs the necessary packages and enables the SPI interface.\n" \
-        "\t It also sets up the PhenoHive service to run on boot.\n" \
-        "\t It is intended to be run on a fresh install of a Debian Linux Distribution (DietPi or Raspbian) running on a Raspberry Pi Zero W.${WHITE}"
+log "${INFO}PhenoHive setup script.\n" \
+    "\t This script installs the necessary packages and enables the SPI interface.\n" \
+    "\t It also sets up the PhenoHive service to run on boot.\n" \
+    "\t It is intended to be run on a fresh install of a Debian Linux Distribution (DietPi or Raspbian) running on a Raspberry Pi Zero W.${WHITE}"
 
-echo -e "${INFO}Running pre-setup checks...${WHITE}"
+log "${INFO}Running pre-setup checks...${WHITE}"
 check_internet
 check_root
 
