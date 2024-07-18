@@ -43,7 +43,7 @@ install_packages() {
         log "${ERROR}Failed to update package list. Exiting.${WHITE}"
         exit 1
     fi
-    if ! apt-get -y install "$(grep -v '^#' $CONFIG_FILE | tr '\n' ' ')"; then
+    if ! grep -vE '^\s*#' $CONFIG_FILE | xargs apt-get -y install; then
         log "${ERROR}Failed to install packages. Exiting.${WHITE}"
         exit 1
     fi
