@@ -5,7 +5,7 @@
 # It is intended to be run on a fresh install on a Debian Linux Distribution (Raspbian or DietPi)
 
 LOG_FILE="/var/log/phenoHive_setup.log"
-CONFIG_FILE="setup.config"
+CONFIG_FILE="tools/setup.config"
 
 # Color codes for the outputs
 ERROR='\033[0;31m'
