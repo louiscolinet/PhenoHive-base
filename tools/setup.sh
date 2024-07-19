@@ -34,6 +34,13 @@ check_root() {
     fi
 }
 
+check_directory() {
+    if [ ! -f $CONFIG_FILE ]; then
+        log "${ERROR}Could not find the configuration file. Please ensure that the setup.config file is in the tools directory, and that the script is run from the PhenoHive root directory.{WHITE}"
+        exit 1
+    fi
+}
+
 install_packages() {
     log "${INFO}Installing necessary packages...${WHITE}"
     # Check if running on DietPi, if so, remove apt compression
@@ -84,6 +91,10 @@ enable_spi() {
 
 setup_service() {
     log "${INFO}Setting up PhenoHive service...${WHITE}"
+    # Modify the WorkingDirectory and ExecStart in the service file to point to the correct (current) directory
+    PROJECT_DIR=$(pwd)
+    sed -i "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_DIR}|" tools/phenoHive.service
+    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" /etc/systemd/system/phenoHive.service
     cp tools/phenoHive.service /etc/systemd/system
     chmod 644 /etc/systemd/system/phenoHive.service
     chmod +x main.py
@@ -99,6 +110,7 @@ log "${INFO}PhenoHive setup script.\n" \
 log "${INFO}Running pre-setup checks...${WHITE}"
 check_internet
 check_root
+check_directory
 
 # Install required packages
 install_packages
