@@ -5,6 +5,7 @@ from PhenoStation import PhenoStation
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
+THICKNESS = 3 # Outline thickness for the status
 
 
 class Display:
@@ -21,10 +22,10 @@ class Display:
         self.SIZE = (self.WIDTH, self.HEIGHT)
         self.LOGO = Image.open(LOGO).rotate(0).resize((128, 70))
 
-    def get_status(self) -> str:
+    def get_status(self) -> tuple(str, tuple):
         """
         Return the color status of the station in function of its current status
-        :return: the color corresponding to the current status of the station
+        :return: the color corresponding to the current status of the station as a tuple (color, RGB)
                 green = OK
                 blue = OK but not connected to the DB
                 yellow = processing
@@ -34,16 +35,17 @@ class Display:
         match self.STATION.status:
             case -1:
                 # Error
-                return "red"
+                return "red", (255, 0, 0)
             case 1:
                 # Processing
-                return "yellow"
+                return "yellow", (255, 255, 0)
             case 0:
-                # OK
                 if self.STATION.connected:
-                    return "green"
+                    # OK and connected to the DB
+                    return "green", (0, 255, 0)
                 else:
-                    return "blue"
+                    # OK but not connected to the DB
+                    return "blue", (0, 0, 255)
             case _:
                 # Station status is not valid
                 raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
@@ -68,6 +70,12 @@ class Display:
         """
         img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
         draw = ImageDraw.Draw(img)
+
+        # Draw outline showing the status
+        status_color = self.get_status()[1]
+        for i in range(THICKNESS):
+            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=status_color)
+
         font = ImageFont.truetype(FONT, 10)
         draw.text((5, 70), str(time_now), font=font, fill=(0, 0, 0))
         draw.text((0, 90), "Next : " + str(time_next_measure), font=font, fill=(0, 0, 0))
@@ -76,7 +84,8 @@ class Display:
         draw.text((0, 110), "Growth : " + str(growth), font=font, fill=(0, 0, 0))
         draw.text((0, 130), "<-- Status", font=font, fill=(0, 0, 0))
         draw.text((80, 130), "Stop -->", font=font, fill=(0, 0, 0))
-        # TODO: draw status
+
+
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
 
@@ -138,13 +147,19 @@ class Display:
         """
         img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
         draw = ImageDraw.Draw(img)
+
+        # Draw outline showing the status
+        status_color = self.get_status()[1]
+        for i in range(THICKNESS):
+            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=status_color)
+
         # Menu
         font = ImageFont.truetype(FONT, 12)
         draw.text((5, 85), "Collecting data...", font=font, fill=(0, 0, 0))
         if action != "":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 100), action, font=font, fill=(0, 0, 0))
-        # TODO: draw status
+
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
 
@@ -159,13 +174,13 @@ class Display:
         font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Status", font=font, fill=(0, 0, 0))
         # Status
-        if self.get_status() == "green"
+        if self.get_status()[0] == "green":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 95), "OK", font=font, fill=(0, 0, 0))
-        elif self.get_status() == "blue"
+        elif self.get_status()[0] == "blue":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 95), "Not connected to the DB", font=font, fill=(0, 0, 0))
-        if self.get_status() == "red"
+        if self.get_status()[0] == "red":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 95), f"Error at {self.STATION.last_error[0]}", font=font, fill=(0, 0, 0))
             draw.text((5, 110), f"{self.STATION.last_error[1]}", font=font, fill=(0, 0, 0))
