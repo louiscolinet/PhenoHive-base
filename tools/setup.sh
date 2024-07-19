@@ -7,6 +7,7 @@
 LOG_FILE="logs/phenoHive_setup_$(date +%Y-%m-%d_%H-%M-%S).log"
 touch "$LOG_FILE"
 CONFIG_FILE="tools/setup.config"
+REQUIREMENTS_FILE="tools/requirements.txt"
 
 # Redirect output to both the log file and stdout with timestamps
 exec > >(awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' | tee -a "$LOG_FILE") 2>&1
@@ -60,7 +61,7 @@ install_packages() {
 
 install_python_packages() {
     echo -e "${INFO}Installing necessary Python packages...${WHITE}"
-    if ! pip install -r requirements.txt --break-system-packages --root-user-action=ignore --no-cache-dir; then
+    if ! pip install -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore --no-cache-dir; then
         echo -e "${ERROR}Failed to install Python packages. Exiting.${WHITE}"
         exit 1
     fi
