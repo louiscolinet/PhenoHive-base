@@ -35,8 +35,15 @@ check_root() {
 }
 
 check_directory() {
-    if [ ! -f $CONFIG_FILE ]; then
-        log "${ERROR}Could not find the configuration file. Please ensure that the setup.config file is in the tools directory, and that the script is run from the PhenoHive root directory.{WHITE}"
+  # Check if the script is being run from the correct directory
+    if [ -f $CONFIG_FILE ]; then
+        cd ..
+        if [ ! -f main.py ]; then
+            log "${ERROR}Please run the script from the PhenoHive directory. Current directory: $(pwd)${WHITE}"
+            exit 1
+        fi
+    else
+        log "${ERROR}Please run the script from the PhenoHive directory. Current directory: $(pwd)${WHITE}"
         exit 1
     fi
 }
