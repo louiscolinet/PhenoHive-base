@@ -5,6 +5,7 @@
 # It is intended to be run on a fresh install on a Debian Linux Distribution (Raspbian or DietPi)
 
 LOG_FILE="logs/phenoHive_setup_$(date +%Y-%m-%d_%H-%M-%S).log"
+touch "$LOG_FILE"
 CONFIG_FILE="tools/setup.config"
 
 # Redirect output to both the log file and stdout with timestamps
