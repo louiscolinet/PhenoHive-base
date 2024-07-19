@@ -31,14 +31,10 @@ check_root() {
 }
 
 check_directory() {
-  # Check if the script is being run from the correct directory
-    if [ -f $CONFIG_FILE ]; then
+    if [ -f "setup.config" ]; then
         cd ..
-        if [ ! -f main.py ]; then
-            echo -e "${ERROR}Please run the script from the PhenoHive directory. Current directory: $(pwd)${WHITE}"
-            exit 1
-        fi
-    else
+    fi
+    if [ ! -f main.py ]; then
         echo -e "${ERROR}Please run the script from the PhenoHive directory. Current directory: $(pwd)${WHITE}"
         exit 1
     fi
