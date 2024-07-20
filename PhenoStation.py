@@ -122,7 +122,7 @@ class PhenoStation:
                 max_speed_hz=self.SPEED_HZ
             )
         )
-        self.disp = Display(self)
+        self.disp = Display()
         self.disp.show_image("assets/logo_elia.jpg")
 
         # Hx711
@@ -157,15 +157,15 @@ class PhenoStation:
         :param field: String, name of the field (ex: StationID_1)
         :param value: value of the field, must be a type supported by InfluxDB (int, float, string, boolean)
         """
-        self.connected = self.reconnect()
+        self.connected = self.client.ping()
 
-        if not self.connected:
-            # Save data to the corresponding csv file in case of connection error (create file if it doesn't exist)
-            save_to_csv([point, field, value], f"data/{point}.csv")
-            with open(f"data/{point}.csv", "a+") as f:
-                now = datetime.datetime.now()  # Influx DB timestamps are in nanoseconds Unix time
-                f.write(f"{now},{point},{field},{value}\n")
-        else:
+        # Save data to the corresponding csv file (create file if it doesn't exist)
+        save_to_csv([point, field, value], f"data/{point}.csv")
+        with open(f"data/{point}.csv", "a+") as f:
+            now = datetime.datetime.now()
+            f.write(f"{now},{point},{field},{value}\n")
+
+        if self.connected:
             # Send data to the DB
             write_api = self.client.write_api(write_options=SYNCHRONOUS)
             LOGGER.debug(f"Sending data to the DB : {point}: {field} : {str(value)[:12]}")
@@ -186,54 +186,17 @@ class PhenoStation:
         self.last_error = (timestamp, exception)
         self.send_to_db("Error", "StationID_%s" % self.station_id, str(exception))
 
-    def reconnect(self) -> bool:
+    def get_weight(self, n=5) -> float:
         """
-        Try to reconnect to the InfluxDB and send the data saved in the csv files
-        :return: True if the connection is successful, False otherwise
-                 If the connection is successful, the data saved in the csv files are sent to the DB
+        Get the weight from the load cell (median of n measurements)
+        :param n: the number of measurements to take (default = 5)
+        :return: The median of the measurements (-1 in case of error)
         """
-        return self.client.ping()
-        """
-        TODO: currently disabled
-        Instead, we will always save each data in a csv
-        If we lost connection, we will open the csvs and send from the last timestamp (stored in self.last_connected)
-        if not ping:
-            return False
-        for file in os.listdir("data/pending/"):
-            if file.endswith(".csv"):
-                with open(f"data/{file}", "r") as f:
-                    lines = f.readlines()
-                    LOGGER.debug(f"Sending {len(lines)} data from {file} to the DB")
-                    for line in lines:
-                        line = line.strip().split(",")
-                        timestamp = line[0]
-                        point = line[1]
-                        field = line[2]
-                        value = line[3]
-                        write_api = self.client.write_api(write_options=SYNCHRONOUS)
-                        if point == "Picture":
-                            write_api.write(bucket=self.bucket, record=Point(point).field(field, value),
-                                            time=timestamp)
-                        else:
-                            write_api.write(bucket=self.bucket, record=Point(point).field(field, int(float(value))),
-                                            time=timestamp)
-
-                # Rename the file to keep a trace of the data sent (add a timestamp to the filename)
-                new_name = f"data/sent/{file.split('.')[0]}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
-                os.rename(f"data/{file}", f"{new_name}")
-        return True
-        """
-
-    def get_weight(self) -> float:
-        """
-        Get the weight from the load cell
-        :return: the weight, or -1 if there is an error
-        """
-        raw_data = self.hx.get_raw_data()
-        if not raw_data:
-            self.register_error(Exception("Error while getting raw data (no data), check load cell connection"))
+        measurements = self.hx.get_raw_data(times=n)
+        if not measurements:
+            self.register_error(RuntimeError("Error while getting raw data (no data), check load cell connection"))
             return -1
-        return statistics.median(raw_data)
+        return statistics.median(measurements)
 
     def capture_and_display(self) -> tuple[str, str]:
         """
@@ -270,7 +233,7 @@ class PhenoStation:
         if not preview:
             name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         else:
-            name = "img"
+            name = "preview"
 
         path_img = self.path + "/%s.jpg" % name
         try:
@@ -360,16 +323,12 @@ class PhenoStation:
         """
         self.disp.show_collecting_data("Measuring weight")
         start = time.time()
-        weights = []
-        for _ in range(n):
-            # Collect n measurements
-            weights.append(self.get_weight())
+        median_weight = self.get_weight(n)
+        if median_weight == -1:
+            return -1
         elapsed = time.time() - start
-
-        # Compute the median weight
-        median = statistics.median(weights)
-        LOGGER.debug(f"Weight: {median} in {elapsed}s")
-        return median
+        LOGGER.debug(f"Weight: {median_weight} in {elapsed}s")
+        return median_weight
 
     def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
         """
@@ -396,7 +355,7 @@ class DebugHx711(hx711.HX711):
         return super()._read(times)
 
     def get_raw_data(self, times=5):
-        # Custom read function to debug (with a max of 100 tries) to avoid infinite loops
+        # Modified read function to debug (with a max of 1000 tries) to avoid infinite loops
         # Furthermore, we check if the data is valid (not False or -1) before appending it to the list
         data_list = []
         count = 0

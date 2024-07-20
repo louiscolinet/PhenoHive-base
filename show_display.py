@@ -5,7 +5,7 @@ from PhenoStation import PhenoStation
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
-THICKNESS = 3 # Outline thickness for the status
+THICKNESS = 3  # Outline thickness for the status
 
 
 class Display:
@@ -22,7 +22,7 @@ class Display:
         self.SIZE = (self.WIDTH, self.HEIGHT)
         self.LOGO = Image.open(LOGO).rotate(0).resize((128, 70))
 
-    def get_status(self) -> tuple(str, tuple):
+    def get_status(self) -> tuple[str, tuple]:
         """
         Return the color status of the station in function of its current status
         :return: the color corresponding to the current status of the station as a tuple (color, RGB)
@@ -50,6 +50,20 @@ class Display:
                 # Station status is not valid
                 raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
 
+    def create_image(self) -> tuple[Image, ImageDraw]:
+        """
+        Create a blank image with the outline
+        :return: the image and the draw object
+        """
+        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
+        draw = ImageDraw.Draw(img)
+
+        # Draw outline showing the status
+        status_color = self.get_status()[1]
+        for i in range(THICKNESS):
+            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=status_color)
+        return img, draw
+
     def show_image(self, path_img: str) -> None:
         """
         Show an image on the display
@@ -68,13 +82,7 @@ class Display:
         :param time_next_measure: time of the next measurement
         :param n_rounds: number of the current measurement
         """
-        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
-
-        # Draw outline showing the status
-        status_color = self.get_status()[1]
-        for i in range(THICKNESS):
-            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=status_color)
+        img, draw = self.create_image()
 
         font = ImageFont.truetype(FONT, 10)
         draw.text((5, 70), str(time_now), font=font, fill=(0, 0, 0))
@@ -85,7 +93,6 @@ class Display:
         draw.text((0, 130), "<-- Status", font=font, fill=(0, 0, 0))
         draw.text((80, 130), "Stop -->", font=font, fill=(0, 0, 0))
 
-
         img.paste(self.LOGO, (0, 0))
         self.DISP.display(img)
 
@@ -94,8 +101,7 @@ class Display:
         Show the main menu
         """
         # Initialize display.
-        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
+        img, draw = self.create_image()
         # Menu
         font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Menu", font=font, fill=(0, 0, 0))
@@ -109,8 +115,7 @@ class Display:
         """
         Show the preview menu
         """
-        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
+        img, draw = self.create_image()
         # Menu
         font = ImageFont.truetype(FONT, 13)
         draw.text((13, 80), "Configuration", font=font, fill=(0, 0, 0))
@@ -127,8 +132,7 @@ class Display:
         :param tare: tare value
         :return:
         """
-        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
+        img, draw = self.create_image()
         # Menu
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 80), "Tare value:" + str(tare), font=font, fill=(0, 0, 0))
@@ -145,14 +149,7 @@ class Display:
         Show the collecting data menu
         :param action: Current action performed by the station (ex: "Taking photo...")
         """
-        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
-
-        # Draw outline showing the status
-        status_color = self.get_status()[1]
-        for i in range(THICKNESS):
-            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=status_color)
-
+        img, draw = self.create_image()
         # Menu
         font = ImageFont.truetype(FONT, 12)
         draw.text((5, 85), "Collecting data...", font=font, fill=(0, 0, 0))
@@ -167,10 +164,7 @@ class Display:
         """
         Show the status menu
         """
-        # Initialize display.
-        img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
-        # Title
+        img, draw = self.create_image()
         font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Status", font=font, fill=(0, 0, 0))
         # Status

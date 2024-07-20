@@ -9,7 +9,6 @@ import datetime
 import RPi.GPIO as GPIO
 import argparse
 import logging
-from statistics import median
 
 CONFIG_FILE = "config.ini"
 LOGGER = None
@@ -44,7 +43,7 @@ def main() -> None:
 
 def handle_button_presses(station: PhenoStation, is_shutdown: int, n_round: int) -> None:
     """
-    Function to handle the button presses
+    Function to handle the button presses in the main menu
     :param station: station object
     :param is_shutdown: shutdown flag
     :param n_round: number of measurement rounds done
@@ -94,35 +93,16 @@ def handle_preview_loop(station: PhenoStation) -> None:
 
 def handle_calibration_loop(station: PhenoStation) -> None:
     """
-    Calibration loop
+    Calibration loop. This functions takes the tare value and displays the current weight on the screen
     :param station: station object
     """
-    def tare(n: int = 20) -> float:
-        """
-        Collect the weight from the load cell for calibration
-        :param n: number of measurements to take (default: 20)
-        :return: The median value of the measurements from the load cell
-        """
-        # Start the measurement
-        weight_list = []
-        for _ in range(n):
-            weight = station.get_weight() - station.tare
-            weight_list.append(weight)
-
-        # Return the median value of the list
-        return median(weight_list)
-
-    station.tare = tare()
+    station.tare = station.get_weight(20)
     station.parser['cal_coef']["tare"] = str(station.tare)
-    raw_weight = 0
+    weight = 0
     while True:
-        station.disp.show_cal_menu(raw_weight, station.tare)
+        station.disp.show_cal_menu(weight, station.tare)
         if not GPIO.input(station.BUT_LEFT):
-            raw_weight = station.get_weight()
-            station.load_cell_cal = 1500 / (raw_weight - station.tare)
-            station.parser['cal_coef']["load_cell_cal"] = str(station.load_cell_cal)
-            with open(CONFIG_FILE, 'w') as configfile:
-                station.parser.write(configfile)
+            weight = station.get_weight()
         if not GPIO.input(station.BUT_RIGHT):
             break
 
