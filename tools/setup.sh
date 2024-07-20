@@ -120,7 +120,7 @@ setup_service
 # Modify the config file to indicate that the setup has been completed
 sed -i 's/setup_complete = False/setup_complete = True/' $CONFIG_FILE
 sed -i 's/setup_date = .*/setup_date = "'"$(date +'%Y-%m-%d %H:%M:%S')"'"/' $CONFIG_FILE
-sed -i 's/absolute_path = .*/absolute_path = "'"$(pwd)"'"/' $CONFIG_FILE
+sed -i 's/absolute_path = .*/absolute_path = "'"$(pwd)/data/images/"'"/' $CONFIG_FILE
 
 # Setup complete, reboot the Raspberry Pi
 echo -e "${INFO}Setup complete. A reboot is required before running the service.${WHITE}"
