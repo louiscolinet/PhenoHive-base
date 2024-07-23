@@ -40,7 +40,12 @@ check_python() {
     # Check if python3.7 is installed, if not, install it
     if ! python3.7 --version; then
         echo -e "${INFO}Installing Python 3.7...${WHITE}"
+        # Add the buster repository to Sources.list
         echo "deb http://deb.debian.org/debian buster main" > /etc/apt/sources.list.d/buster.list
+        # Add the key for the buster repository
+        gpg --keyserver pgp.mit.edu --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517
+        gpg --export 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517 > /etc/apt/trusted.gpg.d/buster.gpg
+
         apt-get update
         apt-get install -y python3.7
     fi
