@@ -31,7 +31,7 @@ def main() -> None:
         except Exception as e:
             error_count += 1
             station.register_error(exception=e)
-            if error_count < 10:
+            if error_count > 10:
                 # Reached unhandled error threshold, exiting the program
                 LOGGER.critical("Critical: too many exception raised, exiting.")
                 raise RuntimeError("Too many exception raised, exiting. Check logs for more details.")
