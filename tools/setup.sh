@@ -36,6 +36,24 @@ check_directory() {
     fi
 }
 
+check_python() {
+    # Check if python3.7 is installed, if not, install it
+    if ! python3.7 --version; then
+        echo -e "${INFO}Installing Python 3.7...${WHITE}"
+        echo "deb http://deb.debian.org/debian buster main" > /etc/apt/sources.list.d/buster.list
+        apt-get update
+        apt-get install -y python3.7
+    fi
+    # Check if pip is installed, if not, install it
+    if ! pip --version; then
+        echo -e "${INFO}Installing pip...${WHITE}"
+        apt-get install -y python3-pip
+    fi
+    # Set python3.7 as the default python version
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+}
+
 install_packages() {
     echo -e "${INFO}Installing necessary packages...${WHITE}"
     # Check if running on DietPi, if so, remove apt compression

@@ -2,4 +2,5 @@ configparser
 influxdb_client
 hx711
 Adafruit_GPIO
-plantcv
+opencv-python==4.6.0.66
+plantcv==4.3.1
