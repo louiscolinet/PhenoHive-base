@@ -257,7 +257,7 @@ class PhenoStation:
         else:
             name = "preview"
 
-        path_img = self.path + "/%s.jpg" % name
+        path_img = self.image_path + "/%s.jpg" % name
         try:
             self.cam.capture_file(file_output=path_img)
         except Exception as e:
