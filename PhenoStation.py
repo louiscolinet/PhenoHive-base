@@ -1,6 +1,5 @@
 import base64
 import configparser
-import os
 import statistics
 import time
 import Adafruit_GPIO.SPI as SPI
@@ -96,7 +95,7 @@ class PhenoStation:
         self.url = str(self.parser["InfluxDB"]["url"])
 
         self.station_id = str(self.parser["ID_station"]["ID"])
-        self.image_path = str(self.parser["Paths"]["image_directory"])
+        self.image_path = str(self.parser["Paths"]["image_path"])
         self.csv_path = str(self.parser["Paths"]["csv_path"])
 
         self.pot_limit = int(self.parser["image_arg"]["pot_limit"])

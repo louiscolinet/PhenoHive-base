@@ -14,7 +14,7 @@ def get_weight(hx, n=20):
     median = statistics.median(measurements)
     std_dev = statistics.stdev(measurements)
     print(f"Weight list: {measurements}\n"
-          f"Median: {median}"
+          f"Median: {median}\n"
           f"Std dev: {std_dev}")
     return median
 
