@@ -124,6 +124,7 @@ echo -e "${INFO}Running pre-setup checks...${WHITE}"
 check_internet
 check_root
 check_directory
+check_python
 
 # Install required packages
 install_packages
