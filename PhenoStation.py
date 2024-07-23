@@ -3,12 +3,12 @@ import configparser
 import os
 import statistics
 import time
-import datetime
 import Adafruit_GPIO.SPI as SPI
 import ST7735 as TFT
 import hx711
 import RPi.GPIO as GPIO
 import logging
+from datetime import datetime
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
@@ -48,8 +48,9 @@ class PhenoStation:
     load_cell_cal = None
     tare = None
     connected = False  # True if the station is connected to influxDB
-    status = 0  # Current station status (-1= Error, 0 = OK, 1 = Processing)
-    last_error = None  # Last error registered as a tuple of the form (timestamp: str, e:Exception)
+    status = 0  # Current station status (-1 = Error, 0 = OK, 1 = Processing)
+    last_error = ("", None)  # Last error registered as a tuple of the form (timestamp: str, e:Exception)
+    measurements = {}  # Measurements dictionary, sent to the database each cycle
 
     # Station constants
     WIDTH = 128
@@ -95,7 +96,8 @@ class PhenoStation:
         self.url = str(self.parser["InfluxDB"]["url"])
 
         self.station_id = str(self.parser["ID_station"]["ID"])
-        self.path = str(self.parser["Path_to_save_img"]["absolute_path"])
+        self.image_path = str(self.parser["Paths"]["image_directory"])
+        self.csv_path = str(self.parser["Paths"]["csv_path"])
 
         self.pot_limit = int(self.parser["image_arg"]["pot_limit"])
         self.channel = str(self.parser["image_arg"]["channel"])
@@ -107,7 +109,7 @@ class PhenoStation:
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.connected = self.client.ping()
-        self.last_connection = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.last_connection = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         LOGGER.debug(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}" +
                      f", Ping returned : {self.connected}")
 
@@ -150,30 +152,47 @@ class PhenoStation:
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    def send_to_db(self, point: str, field: str, value) -> None:
+        # Measurements dictionary
+        self.measurements = {
+            "status": self.status,                  # current status
+            "error_time": self.last_error[0],       # last registered error
+            "error_message": self.last_error[1],    # last registered error
+            "growth": -1.0,                         # plant's growth
+            "weight": -1.0,                         # plant's (measured) weight
+            "standard_deviation": -1.0,             # measured weight standard deviation
+            "picture": ""                           # last picture as a base-64 string
+        }
+
+    def send_to_db(self) -> None:
         """
-        Send data to the InfluxDB
-        :param point: String, name of the measurement (ex: Growth)
-        :param field: String, name of the field (ex: StationID_1)
-        :param value: value of the field, must be a type supported by InfluxDB (int, float, string, boolean)
+        Saves the measurements to the csv file, then sends it to InfluxDB (if connected)
+        Uses PhenoStation.measurements dictionary containing the measurements and their values.
         """
+        # Check connection with the database
         self.connected = self.client.ping()
 
-        # Save data to the corresponding csv file (create file if it doesn't exist)
-        save_to_csv([point, field, value], f"data/{point}.csv")
-        with open(f"data/{point}.csv", "a+") as f:
-            now = datetime.datetime.now()
-            f.write(f"{now},{point},{field},{value}\n")
+        # Save data to the corresponding csv file
+        measurements_list = []
+        for key in sorted(self.measurements.keys()):
+            measurements_list.append(self.measurements[key])
+        save_to_csv(measurements_list, "data/measurements.csv")
+
+        json_body = [
+            {
+                "measurement": f"StationID_{self.station_id}",
+                "tags": {
+                    "station_id": f"{self.station_id}"
+                },
+                "time": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "fields": self.measurements
+            }
+        ]
 
         if self.connected:
-            # Send data to the DB
+            # Send data to the DB if the DB is reachable
             write_api = self.client.write_api(write_options=SYNCHRONOUS)
-            LOGGER.debug(f"Sending data to the DB : {point}: {field} : {str(value)[:12]}")
-            if point == "Picture":
-                p = Point(point).field(field, value)
-            else:
-                p = Point(point).field(field, int(value))
-            write_api.write(bucket=self.bucket, record=p)
+            LOGGER.debug(f"Sending data to the DB: {json_body[0]}")
+            write_api.write_points(json_body)
 
     def register_error(self, exception: Exception) -> None:
         """
@@ -181,22 +200,24 @@ class PhenoStation:
         :param exception: The exception that occurred
         """
         LOGGER.error(f"Error : {exception}")
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         self.status = -1
         self.last_error = (timestamp, exception)
-        self.send_to_db("Error", "StationID_%s" % self.station_id, str(exception))
+        self.measurements["status"] = self.status
+        self.measurements["error_time"] = self.last_error[0]
+        self.measurements["error_message"] = self.last_error[1]
 
-    def get_weight(self, n=5) -> float:
+    def get_weight(self, n=5) -> tuple[float, float]:
         """
         Get the weight from the load cell (median of n measurements)
         :param n: the number of measurements to take (default = 5)
-        :return: The median of the measurements (-1 in case of error)
+        :return: The median of the measurements (-1 in case of error) and the observed standard deviation
         """
         measurements = self.hx.get_raw_data(times=n)
         if not measurements:
             self.register_error(RuntimeError("Error while getting raw data (no data), check load cell connection"))
-            return -1
-        return statistics.median(measurements)
+            return -1.0, -1.0
+        return statistics.median(measurements), statistics.stdev(measurements)
 
     def capture_and_display(self) -> tuple[str, str]:
         """
@@ -231,7 +252,7 @@ class PhenoStation:
         self.cam.start()
         time.sleep(time_to_wait)
         if not preview:
-            name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            name = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
             name = "preview"
 
@@ -259,6 +280,8 @@ class PhenoStation:
         try:
             self.disp.show_collecting_data("Taking photo")
             pic, growth_value = self.picture_pipeline()
+            self.measurements["picture"] = pic
+            self.measurements["growth"] = growth_value
         except Exception as e:
             self.register_error(Exception(f"Error while taking the photo: {e}"))
             self.disp.show_collecting_data("Error while taking the photo")
@@ -267,7 +290,9 @@ class PhenoStation:
 
         # Get weight
         try:
-            weight = self.weight_pipeline()
+            weight, std_dev = self.weight_pipeline()
+            self.measurements["weight"] = weight
+            self.measurements["standard_deviation"] = std_dev
 
             # Measurement finished, display the weight
             self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
@@ -281,7 +306,7 @@ class PhenoStation:
         # Send data to the DB
         try:
             self.disp.show_collecting_data("Sending data to the DB")
-            self.database_pipeline(growth_value, weight, pic)
+            self.send_to_db()
             LOGGER.debug("Data sent to the DB")
             self.disp.show_collecting_data("Data sent to the DB")
             time.sleep(2)
@@ -315,30 +340,20 @@ class PhenoStation:
             time.sleep(2)
         return pic, growth_value
 
-    def weight_pipeline(self, n=10) -> float:
+    def weight_pipeline(self, n=10) -> tuple[float, float]:
         """
         Weight collection pipeline
         :param n: The number of measurements to take (default = 10)
-        :return: The median weight from the collected measurements
+        :return: The median of the measurements (-1 in case of error) and the observed standard deviation
         """
         self.disp.show_collecting_data("Measuring weight")
         start = time.time()
-        median_weight = self.get_weight(n)
-        if median_weight == -1:
-            return -1
+        median_weight, std_dev = self.get_weight(n)
+        if median_weight == -1.0:
+            return -1.0, -1.0
         elapsed = time.time() - start
-        LOGGER.debug(f"Weight: {median_weight} in {elapsed}s")
-        return median_weight
-
-    def database_pipeline(self, growth_value: int, weight: float, pic: str) -> None:
-        """
-        Send the collected data to the database
-        """
-        field_id = "StationID_%s" % self.station_id
-        LOGGER.debug(f"Sending data to the DB with field ID : {field_id}")
-        self.send_to_db("Growth", field_id, growth_value)
-        self.send_to_db("Weight", field_id, weight)
-        self.send_to_db("Picture", field_id, pic)  # Send picture in base64
+        LOGGER.debug(f"Weight: {median_weight} in {elapsed}s (with standard deviation: {std_dev}")
+        return median_weight, std_dev
 
 
 class DebugHx711(hx711.HX711):
