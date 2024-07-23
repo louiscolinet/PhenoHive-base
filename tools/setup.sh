@@ -21,7 +21,7 @@ check_internet() {
 
 check_root() {
     if [ "$EUID" -ne 0 ]; then
-        echo -e "${ERROR}Please run as root: sudo bash setup.sh${WHITE}"
+        echo -e "${ERROR}Please run as root: sudo bash $0${WHITE}"
         exit 1
     fi
 }
@@ -52,7 +52,7 @@ check_python() {
         # Add the buster repository to Sources.list
         echo "deb http://deb.debian.org/debian buster main" > /etc/apt/sources.list.d/buster.list
         # Add the key for the buster repository
-        gpg --keyserver pgp.mit.edu --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517
+        gpg --keyserver keys.openpgp.org --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517
         gpg --export 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517 > /etc/apt/trusted.gpg.d/buster.gpg
 
         apt-get update

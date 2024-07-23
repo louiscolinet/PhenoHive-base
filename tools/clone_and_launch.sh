@@ -6,7 +6,7 @@
 
 # Check if the script is being run as root
 if [ "$EUID" -ne 0 ]
-  then echo -e "$(date) - Error: this script mus be run as root: sudo bash setup.sh" >&2
+  then echo -e "$(date) - Error: this script mus be run as root: sudo bash $0" >&2
   exit 1
 fi
 
@@ -24,7 +24,7 @@ cd /root/PhenoHive || {
   exit 1;
 }
 
-if bash setup.sh; then
+if bash tools/setup.sh; then
     echo "$(date) - Setup complete."
 else
     echo "$(date) - Error: setup failed. Exiting." >&2
