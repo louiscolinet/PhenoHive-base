@@ -1,5 +1,6 @@
-configparser
-influxdb_client
+numpy==2.0.0
+configparser==7.0.0
+influxdb-client==1.44.0
 hx711
 Adafruit_GPIO
 opencv-python==4.7.0.72
