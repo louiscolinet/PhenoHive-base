@@ -7,7 +7,8 @@ import datetime
 import cv2
 
 
-def get_height_pix(image_path: str, pot_limit: int, channel: str = 'k', kernel_size: int = 3, fill_size: int = 1) -> int:
+def get_height_pix(image_path: str, pot_limit: int, channel: str = 'k', kernel_size: int = 3,
+                   fill_size: int = 1) -> int:
     date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     path = "data/images/edges_img/edge%s.jpg" % date
     pcv.params.debug = None
@@ -71,7 +72,7 @@ def get_segment_list(image_path: str, channel: str = 'k', kernel_size: int = 20)
     if pcv.params.debug is not None:
         # The labeled image is only useful for debugging purposes
         _ = pcv.morphology.segment_path_length(segmented_img=segmented_img,
-                                                         objects=obj, label="default")
+                                               objects=obj, label="default")
     # get segment lengths
     path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
 

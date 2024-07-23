@@ -16,6 +16,7 @@ from utils import save_to_csv
 from show_display import Display
 
 LOGGER = logging.getLogger("PhenoStation")
+DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class PhenoStation:
@@ -33,7 +34,8 @@ class PhenoStation:
     org = None
     bucket = None
     url = None
-    path = None
+    image_path = None
+    csv_path = None
     pot_limit = None
     channel = None
     kernel_size = None
@@ -108,7 +110,7 @@ class PhenoStation:
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.connected = self.client.ping()
-        self.last_connection = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.last_connection = datetime.now().strftime(DATE_FORMAT)
         LOGGER.debug(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}" +
                      f", Ping returned : {self.connected}")
 
@@ -165,7 +167,7 @@ class PhenoStation:
     def send_to_db(self) -> None:
         """
         Saves the measurements to the csv file, then sends it to InfluxDB (if connected)
-        Uses PhenoStation.measurements dictionary containing the measurements and their values.
+        Uses `PhenoStation.measurements` dictionary containing the measurements and their values.
         """
         # Check connection with the database
         self.connected = self.client.ping()
@@ -182,7 +184,7 @@ class PhenoStation:
                 "tags": {
                     "station_id": f"{self.station_id}"
                 },
-                "time": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "time": datetime.now().strftime(DATE_FORMAT),
                 "fields": self.measurements
             }
         ]
@@ -199,7 +201,7 @@ class PhenoStation:
         :param exception: The exception that occurred
         """
         LOGGER.error(f"Error : {exception}")
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.now().strftime(DATE_FORMAT)
         self.status = -1
         self.last_error = (timestamp, exception)
         self.measurements["status"] = self.status
@@ -251,7 +253,7 @@ class PhenoStation:
         self.cam.start()
         time.sleep(time_to_wait)
         if not preview:
-            name = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            name = datetime.now().strftime(DATE_FORMAT)
         else:
             name = "preview"
 
