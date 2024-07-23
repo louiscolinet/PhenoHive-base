@@ -134,9 +134,9 @@ class Display:
         img, draw = self.create_image()
         # Menu
         font = ImageFont.truetype(FONT, 10)
-        draw.text((0, 80), "Tare value:" + str(tare), font=font, fill=(0, 0, 0))
-        draw.text((0, 95), "Current value:" + str(weight), font=font, fill=(0, 0, 0))
-        draw.text((0, 110), "Net value:" + str(weight - tare), font=font, fill=(0, 0, 0))
+        draw.text((0, 80), f"Tare value: {tare}", font=font, fill=(0, 0, 0))
+        draw.text((0, 95), f"Current value: {weight}", font=font, fill=(0, 0, 0))
+        draw.text((0, 110), f"Net value: {weight - tare}", font=font, fill=(0, 0, 0))
         # Button
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Get Calib    Back -->", font=font, fill=(0, 0, 0))

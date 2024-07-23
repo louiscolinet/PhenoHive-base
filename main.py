@@ -30,11 +30,9 @@ def main() -> None:
             handle_button_presses(station, is_shutdown, n_round)
         except Exception as e:
             error_count += 1
-            PhenoStation.register_error(e)
-            PhenoStation.status(-1)
+            station.register_error(exception=e)
             if error_count < 10:
                 # Reached unhandled error threshold, exiting the program
-                error_count = 0
                 LOGGER.critical("Critical: too many exception raised, exiting.")
                 raise RuntimeError("Too many exception raised, exiting. Check logs for more details.")
             else:
@@ -96,7 +94,7 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     Calibration loop. This functions takes the tare value and displays the current weight on the screen
     :param station: station object
     """
-    station.tare = station.get_weight(20)
+    station.tare = station.get_weight(20)[0]
     station.parser['cal_coef']["tare"] = str(station.tare)
     weight = 0
     while True:
