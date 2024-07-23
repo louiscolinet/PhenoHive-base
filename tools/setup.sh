@@ -45,29 +45,6 @@ disable_apt_compression() {
     fi
 }
 
-check_python() {
-    # Check if python3.7 is installed, if not, install it
-    if ! python3.7 ; then
-        echo -e "${INFO}Installing Python 3.7...${WHITE}"
-        # Add the buster repository to Sources.list
-        echo "deb http://deb.debian.org/debian buster main" > /etc/apt/sources.list.d/buster.list
-        # Add the key for the buster repository
-        gpg --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517
-        gpg --export 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517 > /etc/apt/trusted.gpg.d/buster.gpg
-
-        apt-get update
-        apt-get install -y python3.7
-    fi
-    # Check if pip is installed, if not, install it
-    if ! pip --version; then
-        echo -e "${INFO}Installing pip...${WHITE}"
-        apt-get install -y python3-pip
-        pip install --upgrade wheel setuptools
-    fi
-    # Set python3.7 as the default python version
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 3
-}
-
 install_packages() {
     echo -e "${INFO}Installing necessary packages...${WHITE}"
     # Check if running on DietPi, if so, remove apt compression
@@ -139,7 +116,6 @@ check_internet
 check_root
 check_directory
 disable_apt_compression
-check_python
 
 # Install required packages
 install_packages
