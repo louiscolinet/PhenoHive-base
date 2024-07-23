@@ -49,13 +49,17 @@ class Display:
             # Station status is not valid
             raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
 
-    def create_image(self) -> tuple[Image, ImageDraw]:
+    def create_image(self, logo: bool = False) -> tuple[Image, ImageDraw]:
         """
         Create a blank image with the outline
-        :return: the image and the draw object
+        :param logo: if True, the logo is added to the image (default: False)
+        :return: the image and the draw object as a tuple
         """
         img = Image.new('RGB', self.SIZE, color=(255, 255, 255))
         draw = ImageDraw.Draw(img)
+
+        if logo:
+            img.paste(self.LOGO, (0, 0))
 
         # Draw outline showing the status
         status_color = self.get_status()[1]
@@ -81,7 +85,7 @@ class Display:
         :param time_next_measure: time of the next measurement
         :param n_rounds: number of the current measurement
         """
-        img, draw = self.create_image()
+        img, draw = self.create_image(logo=True)
 
         font = ImageFont.truetype(FONT, 10)
         draw.text((5, 70), str(time_now), font=font, fill=(0, 0, 0))
@@ -92,7 +96,6 @@ class Display:
         draw.text((0, 130), "<-- Status", font=font, fill=(0, 0, 0))
         draw.text((80, 130), "Stop -->", font=font, fill=(0, 0, 0))
 
-        img.paste(self.LOGO, (0, 0))
         self.SCREEN.display(img)
 
     def show_menu(self) -> None:
@@ -100,28 +103,26 @@ class Display:
         Show the main menu
         """
         # Initialize display.
-        img, draw = self.create_image()
+        img, draw = self.create_image(logo=True)
         # Menu
         font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Menu", font=font, fill=(0, 0, 0))
         # Button
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Config        Start -->", font=font, fill=(0, 0, 0))
-        img.paste(self.LOGO, (0, 0))
         self.SCREEN.display(img)
 
     def show_cal_prev_menu(self) -> None:
         """
         Show the preview menu
         """
-        img, draw = self.create_image()
+        img, draw = self.create_image(logo=True)
         # Menu
         font = ImageFont.truetype(FONT, 13)
         draw.text((13, 80), "Configuration", font=font, fill=(0, 0, 0))
         # Button
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Calib           Prev -->", font=font, fill=(0, 0, 0))
-        img.paste(self.LOGO, (0, 0))
         self.SCREEN.display(img)
 
     def show_cal_menu(self, weight, tare) -> None:
@@ -131,7 +132,7 @@ class Display:
         :param tare: tare value
         :return:
         """
-        img, draw = self.create_image()
+        img, draw = self.create_image(logo=True)
         # Menu
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 80), f"Tare value: {tare}", font=font, fill=(0, 0, 0))
@@ -140,7 +141,6 @@ class Display:
         # Button
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Get Calib    Back -->", font=font, fill=(0, 0, 0))
-        img.paste(self.LOGO, (0, 0))
         self.SCREEN.display(img)
 
     def show_collecting_data(self, action):
@@ -148,22 +148,20 @@ class Display:
         Show the collecting data menu
         :param action: Current action performed by the station (ex: "Taking photo...")
         """
-        img, draw = self.create_image()
+        img, draw = self.create_image(logo=True)
         # Menu
         font = ImageFont.truetype(FONT, 12)
         draw.text((5, 85), "Collecting data...", font=font, fill=(0, 0, 0))
         if action != "":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 100), action, font=font, fill=(0, 0, 0))
-
-        img.paste(self.LOGO, (0, 0))
         self.SCREEN.display(img)
 
     def show_status(self) -> None:
         """
         Show the status menu
         """
-        img, draw = self.create_image()
+        img, draw = self.create_image(logo=True)
         font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Status", font=font, fill=(0, 0, 0))
         # Status
@@ -181,5 +179,4 @@ class Display:
         # Button
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Stop         Resume -->", font=font, fill=(0, 0, 0))
-        img.paste(self.LOGO, (0, 0))
         self.SCREEN.display(img)
