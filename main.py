@@ -100,7 +100,7 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     while True:
         station.disp.show_cal_menu(weight, station.tare)
         if not GPIO.input(station.BUT_LEFT):
-            weight = station.get_weight()
+            weight = station.get_weight()[0]
         if not GPIO.input(station.BUT_RIGHT):
             break
 
