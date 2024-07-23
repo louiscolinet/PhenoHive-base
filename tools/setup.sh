@@ -36,9 +36,18 @@ check_directory() {
     fi
 }
 
+disable_apt_compression() {
+    # If running on DietPi, remove apt compression to speed up apt
+    if [ -f /boot/dietpi/.dietpi ]; then
+        echo 'Acquire::GzipIndexes "false";' > /etc/apt/apt.conf.d/98dietpi-uncompressed
+        /boot/dietpi/func/dietpi-set_software apt-cache clean
+        apt update
+    fi
+}
+
 check_python() {
     # Check if python3.7 is installed, if not, install it
-    if ! python3.7 --version; then
+    if ! python3.7 ; then
         echo -e "${INFO}Installing Python 3.7...${WHITE}"
         # Add the buster repository to Sources.list
         echo "deb http://deb.debian.org/debian buster main" > /etc/apt/sources.list.d/buster.list
@@ -53,10 +62,10 @@ check_python() {
     if ! pip --version; then
         echo -e "${INFO}Installing pip...${WHITE}"
         apt-get install -y python3-pip
+        pip install --upgrade wheel setuptools
     fi
     # Set python3.7 as the default python version
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 3
 }
 
 install_packages() {
@@ -129,6 +138,7 @@ echo -e "${INFO}Running pre-setup checks...${WHITE}"
 check_internet
 check_root
 check_directory
+disable_apt_compression
 check_python
 
 # Install required packages
