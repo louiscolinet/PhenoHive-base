@@ -36,6 +36,38 @@ check_directory() {
     fi
 }
 
+disable_apt_compression() {
+    # If running on DietPi, remove apt compression to speed up apt
+    if [ -f /boot/dietpi/.dietpi ]; then
+        echo 'Acquire::GzipIndexes "false";' > /etc/apt/apt.conf.d/98dietpi-uncompressed
+        /boot/dietpi/func/dietpi-set_software apt-cache clean
+        apt update
+    fi
+}
+
+check_python() {
+    # Check if python3.7 is installed, if not, install it
+    if ! python3.7 ; then
+        echo -e "${INFO}Installing Python 3.7...${WHITE}"
+        # Add the buster repository to Sources.list
+        echo "deb http://deb.debian.org/debian buster main" > /etc/apt/sources.list.d/buster.list
+        # Add the key for the buster repository
+        gpg --keyserver pgp.mit.edu --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517
+        gpg --export 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517 > /etc/apt/trusted.gpg.d/buster.gpg
+
+        apt-get update
+        apt-get install -y python3.7
+    fi
+    # Check if pip is installed, if not, install it
+    if ! pip --version; then
+        echo -e "${INFO}Installing pip...${WHITE}"
+        apt-get install -y python3-pip
+        pip install --upgrade wheel setuptools
+    fi
+    # Set python3.7 as the default python version
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 3
+}
+
 install_packages() {
     echo -e "${INFO}Installing necessary packages...${WHITE}"
     # Check if running on DietPi, if so, remove apt compression
@@ -66,7 +98,7 @@ install_st7735() {
     echo -e "${INFO}Installing ST7735 library...${WHITE}"
     git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
     cd Python_ST7735 || echo -e "${ERROR}Python_ST335 could not be installed: Could not find directory.${WHITE}"
-    python setup.py install
+    python3 setup.py install
     cd ..
 }
 
@@ -89,7 +121,7 @@ setup_service() {
     # Modify the WorkingDirectory and ExecStart in the service file to point to the correct (current) directory
     PROJECT_DIR=$(pwd)
     sed -i "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_DIR}|" tools/phenoHive.service
-    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" /etc/systemd/system/phenoHive.service
+    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" tools/phenoHive.service
     cp tools/phenoHive.service /etc/systemd/system
     chmod 644 /etc/systemd/system/phenoHive.service
     chmod +x main.py
@@ -106,6 +138,8 @@ echo -e "${INFO}Running pre-setup checks...${WHITE}"
 check_internet
 check_root
 check_directory
+disable_apt_compression
+check_python
 
 # Install required packages
 install_packages

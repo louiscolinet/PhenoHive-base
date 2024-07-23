@@ -18,8 +18,8 @@ then
 fi
 
 # Clone the PhenoHive repository and launch the setup script
-git clone https://github.com/Oldgram/PhenoHive.git /home/pi/PhenoHive
-cd /home/pi/PhenoHive || {
+git clone https://github.com/Oldgram/PhenoHive.git /root/PhenoHive
+cd /root/PhenoHive || {
   echo "$(date) - Error: could not find PhenoHive directory. Exiting" >&2;
   exit 1;
 }
