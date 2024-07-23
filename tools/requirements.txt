@@ -1,5 +1,5 @@
-influxdb_client
-plantcv
 configparser
+influxdb_client
 hx711
 Adafruit_GPIO
+plantcv

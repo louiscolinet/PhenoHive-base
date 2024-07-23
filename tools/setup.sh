@@ -66,7 +66,7 @@ install_st7735() {
     echo -e "${INFO}Installing ST7735 library...${WHITE}"
     git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
     cd Python_ST7735 || echo -e "${ERROR}Python_ST335 could not be installed: Could not find directory.${WHITE}"
-    python setup.py install
+    python3 setup.py install
     cd ..
 }
 
@@ -89,7 +89,7 @@ setup_service() {
     # Modify the WorkingDirectory and ExecStart in the service file to point to the correct (current) directory
     PROJECT_DIR=$(pwd)
     sed -i "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_DIR}|" tools/phenoHive.service
-    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" /etc/systemd/system/phenoHive.service
+    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" tools/phenoHive.service
     cp tools/phenoHive.service /etc/systemd/system
     chmod 644 /etc/systemd/system/phenoHive.service
     chmod +x main.py
