@@ -1,7 +1,6 @@
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-from PhenoStation import PhenoStation
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
@@ -9,14 +8,15 @@ THICKNESS = 3  # Outline thickness for the status
 
 
 class Display:
-    def __init__(self) -> None:
+    def __init__(self, station) -> None:
         """
         Initialize the class variables
+        :param station: PhenoStation instance
         """
-        self.STATION = PhenoStation.get_instance()
-        self.DISP = self.STATION.disp
-        self.DISP.clear()
-        self.DISP.begin()
+        self.STATION = station
+        self.SCREEN = self.STATION.st7735
+        self.SCREEN.clear()
+        self.SCREEN.begin()
         self.WIDTH = self.STATION.WIDTH
         self.HEIGHT = self.STATION.HEIGHT
         self.SIZE = (self.WIDTH, self.HEIGHT)
@@ -32,23 +32,22 @@ class Display:
                 red = error
         :raises: ValueError: If the station's status incorrect (not -1, 0, or 1)
         """
-        match self.STATION.status:
-            case -1:
-                # Error
-                return "red", (255, 0, 0)
-            case 1:
-                # Processing
-                return "yellow", (255, 255, 0)
-            case 0:
-                if self.STATION.connected:
-                    # OK and connected to the DB
-                    return "green", (0, 255, 0)
-                else:
-                    # OK but not connected to the DB
-                    return "blue", (0, 0, 255)
-            case _:
-                # Station status is not valid
-                raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
+        if self.STATION.status == -1:
+            # Error
+            return "red", (255, 0, 0)
+        elif self.STATION.status == 1:
+            # Processing
+            return "yellow", (255, 255, 0)
+        elif self.STATION.status == 0:
+            if self.STATION.connected:
+                # OK and connected to the DB
+                return "green", (0, 255, 0)
+            else:
+                # OK but not connected to the DB
+                return "blue", (0, 0, 255)
+        else:
+            # Station status is not valid
+            raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
 
     def create_image(self) -> tuple[Image, ImageDraw]:
         """
@@ -71,7 +70,7 @@ class Display:
         """
         image = Image.open(path_img)
         image = image.rotate(0).resize(self.SIZE)
-        self.DISP.display(image)
+        self.SCREEN.display(image)
 
     def show_measuring_menu(self, weight: float, growth: int, time_now: str, time_next_measure: str, n_rounds: int) -> None:
         """
@@ -94,7 +93,7 @@ class Display:
         draw.text((80, 130), "Stop -->", font=font, fill=(0, 0, 0))
 
         img.paste(self.LOGO, (0, 0))
-        self.DISP.display(img)
+        self.SCREEN.display(img)
 
     def show_menu(self) -> None:
         """
@@ -109,7 +108,7 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Config        Start -->", font=font, fill=(0, 0, 0))
         img.paste(self.LOGO, (0, 0))
-        self.DISP.display(img)
+        self.SCREEN.display(img)
 
     def show_cal_prev_menu(self) -> None:
         """
@@ -123,7 +122,7 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Calib           Prev -->", font=font, fill=(0, 0, 0))
         img.paste(self.LOGO, (0, 0))
-        self.DISP.display(img)
+        self.SCREEN.display(img)
 
     def show_cal_menu(self, weight, tare) -> None:
         """
@@ -142,7 +141,7 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Get Calib    Back -->", font=font, fill=(0, 0, 0))
         img.paste(self.LOGO, (0, 0))
-        self.DISP.display(img)
+        self.SCREEN.display(img)
 
     def show_collecting_data(self, action):
         """
@@ -158,7 +157,7 @@ class Display:
             draw.text((5, 100), action, font=font, fill=(0, 0, 0))
 
         img.paste(self.LOGO, (0, 0))
-        self.DISP.display(img)
+        self.SCREEN.display(img)
 
     def show_status(self) -> None:
         """
@@ -183,4 +182,4 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Stop         Resume -->", font=font, fill=(0, 0, 0))
         img.paste(self.LOGO, (0, 0))
-        self.DISP.display(img)
+        self.SCREEN.display(img)

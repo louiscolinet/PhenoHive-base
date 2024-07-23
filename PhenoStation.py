@@ -124,7 +124,7 @@ class PhenoStation:
                 max_speed_hz=self.SPEED_HZ
             )
         )
-        self.disp = Display()
+        self.disp = Display(self)
         self.disp.show_image("assets/logo_elia.jpg")
 
         # Hx711
