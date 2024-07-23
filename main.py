@@ -114,8 +114,8 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
     :param n_round: number of measurement rounds done
     """
     LOGGER.info("Measuring loop")
-    growth_value = 0
-    weight = 0
+    growth_value = 0.0
+    weight = 0.0
     time_delta = datetime.timedelta(seconds=station.time_interval)
     time_now = datetime.datetime.now()
     time_nxt_measure = time_now + time_delta

@@ -7,10 +7,9 @@ import datetime
 import cv2
 
 
-def get_height_pix(image_path, pot_limit, channel='k', kernel_size=3, fill_size=1):
-    date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = "/home/pi/Desktop/edges_img/edge%s.jpg" % date
-    print(path)
+def get_height_pix(image_path: str, pot_limit: int, channel: str = 'k', kernel_size: int = 3, fill_size: int = 1) -> int:
+    date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    path = "data/images/edges_img/edge%s.jpg" % date
     pcv.params.debug = None
 
     img, path, _ = pcv.readimage(image_path)
@@ -24,7 +23,7 @@ def get_height_pix(image_path, pot_limit, channel='k', kernel_size=3, fill_size=
     edges_crop = pcv.crop(edges, 5, 5, height - pot_limit - 10, width - 10)
     new_height = edges_crop.shape[0]
     edges_filled = pcv.fill(edges_crop, fill_size)
-    # pcv.print_image(edges_filled, path)
+    pcv.print_image(edges_filled, path)
     non_zero = np.nonzero(edges_filled)
     # height = position of the last non-zero pixel
     plant_height_pix = new_height - min(non_zero[0])
@@ -32,7 +31,7 @@ def get_height_pix(image_path, pot_limit, channel='k', kernel_size=3, fill_size=
     return plant_height_pix
 
 
-def get_segment_list(image_path, channel='k', kernel_size=20):
+def get_segment_list(image_path: str, channel: str = 'k', kernel_size: int = 20) -> list[int]:
     pcv.params.debug = None
 
     # read image
@@ -79,7 +78,7 @@ def get_segment_list(image_path, channel='k', kernel_size=20):
     return path_lengths
 
 
-def get_total_length(image_path, channel='k', kernel_size=20):
+def get_total_length(image_path: str, channel: str = 'k', kernel_size: int = 20) -> int:
     segment_list = get_segment_list(image_path, channel, kernel_size)
 
     # get sum of segment lengths
