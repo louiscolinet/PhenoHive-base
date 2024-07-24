@@ -47,12 +47,6 @@ disable_apt_compression() {
 
 install_packages() {
     echo -e "${INFO}Installing necessary packages...${WHITE}"
-    # Check if running on DietPi, if so, remove apt compression
-    if [ -f /boot/dietpi/.dietpi ]; then
-        # Remove apt compression to speed up the process
-        echo 'Acquire::GzipIndexes "false";' > /etc/apt/apt.conf.d/98dietpi-uncompressed
-        /boot/dietpi/func/dietpi-set_software apt-cache clean
-    fi
     if ! apt-get update; then
         echo -e "${ERROR}Failed to update package list. Exiting.${WHITE}"
         exit 1
@@ -126,11 +120,6 @@ install_st7735
 enable_spi
 # Setup PhenoHive as a service so PhenoHive/main.py is run on boot
 setup_service
-
-# Modify the config file to indicate that the setup has been completed
-sed -i 's/setup_complete = False/setup_complete = True/' $CONFIG_FILE
-sed -i 's/setup_date = .*/setup_date = "'"$(date +'%Y-%m-%d %H:%M:%S')"'"/' $CONFIG_FILE
-sed -i 's/absolute_path = .*/absolute_path = "'"$(pwd)/data/images/"'"/' $CONFIG_FILE
 
 # Setup complete, reboot the Raspberry Pi
 echo -e "${INFO}Setup complete. A reboot is required before running the service.${WHITE}"
