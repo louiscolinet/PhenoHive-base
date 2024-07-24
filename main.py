@@ -47,7 +47,6 @@ def handle_button_presses(station: PhenoStation, is_shutdown: int, n_round: int)
     :param n_round: number of measurement rounds done
     """
     if not GPIO.input(station.BUT_LEFT):
-        LOGGER.info("Left button pressed, going to the configuration menu")
         station.disp.show_cal_prev_menu()
         time.sleep(1)
         handle_configuration_menu(station)
@@ -105,6 +104,22 @@ def handle_calibration_loop(station: PhenoStation) -> None:
             break
 
 
+def handle_status_loop(station: PhenoStation) -> bool:
+    """
+    Status menu: display the current status of the station
+    :param station: station object
+    :return: True if the measurement loop should continue, False otherwise
+    """
+    while True:
+        station.disp.show_status()
+        if not GPIO.input(station.BUT_RIGHT):
+            # Resume
+            return True
+        if not GPIO.input(station.BUT_LEFT):
+            # Stop
+            return False
+
+
 def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
     """
     Measurement loop
@@ -117,7 +132,8 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
     time_delta = datetime.timedelta(seconds=station.time_interval)
     time_now = datetime.datetime.now()
     time_nxt_measure = time_now + time_delta
-    while True:
+    continue_measurements = True
+    while continue_measurements:
         time_now = datetime.datetime.now()
         station.disp.show_measuring_menu(round(weight, 2), round(growth_value, 2),
                                          time_now.strftime("%Y/%m/%d %H:%M:%S"),
@@ -135,6 +151,10 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
             with open(CONFIG_FILE, 'w') as configfile:
                 station.parser.write(configfile)
             break
+
+        if not GPIO.input(station.BUT_LEFT):
+            continue_measurements = handle_status_loop(station)
+            time.sleep(1)
     time.sleep(1)
 
 

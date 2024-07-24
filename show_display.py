@@ -1,6 +1,4 @@
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
@@ -22,10 +20,10 @@ class Display:
         self.SIZE = (self.WIDTH, self.HEIGHT)
         self.LOGO = Image.open(LOGO).rotate(0).resize((128, 70))
 
-    def get_status(self) -> tuple[str, tuple]:
+    def get_status(self) -> str:
         """
         Return the color status of the station in function of its current status
-        :return: the color corresponding to the current status of the station as a tuple (color, RGB)
+        :return: the color corresponding to the current status of the station as a string
                 green = OK
                 blue = OK but not connected to the DB
                 yellow = processing
@@ -34,17 +32,17 @@ class Display:
         """
         if self.STATION.status == -1:
             # Error
-            return "red", (255, 0, 0)
+            return "red"
         elif self.STATION.status == 1:
             # Processing
-            return "yellow", (255, 255, 0)
+            return "yellow"
         elif self.STATION.status == 0:
             if self.STATION.connected:
                 # OK and connected to the DB
-                return "green", (0, 255, 0)
+                return "green"
             else:
                 # OK but not connected to the DB
-                return "blue", (0, 0, 255)
+                return "blue"
         else:
             # Station status is not valid
             raise ValueError(f'Station status is incorrect, should be -1, 0, or 1. Got: {self.STATION.status}')
@@ -62,9 +60,8 @@ class Display:
             img.paste(self.LOGO, (0, 0))
 
         # Draw outline showing the status
-        status_color = self.get_status()[1]
         for i in range(THICKNESS):
-            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=status_color)
+            draw.rectangle((i, i, self.WIDTH-1-i, self.HEIGHT-1-i), outline=self.get_status())
         return img, draw
 
     def show_image(self, path_img: str) -> None:
@@ -165,18 +162,19 @@ class Display:
         font = ImageFont.truetype(FONT, 13)
         draw.text((40, 80), "Status", font=font, fill=(0, 0, 0))
         # Status
-        if self.get_status()[0] == "green":
+        status = self.get_status()
+        if status == "green":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 95), "OK", font=font, fill=(0, 0, 0))
-        elif self.get_status()[0] == "blue":
+        elif status == "blue":
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 95), "Not connected to the DB", font=font, fill=(0, 0, 0))
-        if self.get_status()[0] == "red":
-            font = ImageFont.truetype(FONT, 8)
-            draw.text((5, 95), f"Error at {self.STATION.last_error[0]}", font=font, fill=(0, 0, 0))
-            draw.text((5, 110), f"{self.STATION.last_error[1]}", font=font, fill=(0, 0, 0))
+        elif status == "red":
+            font = ImageFont.truetype(FONT, 7)
+            draw.text((3, 95), f"Error at {self.STATION.last_error[0]}", font=font, fill=(0, 0, 0))
+            draw.text((3, 110), f"{self.STATION.last_error[1]}", font=font, fill=(0, 0, 0))
 
         # Button
         font = ImageFont.truetype(FONT, 10)
-        draw.text((0, 130), "<-- Stop         Resume -->", font=font, fill=(0, 0, 0))
+        draw.text((0, 130), "<-- Stop       Resume -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
