@@ -155,13 +155,13 @@ class PhenoStation:
 
         # Measurements dictionary
         self.measurements = {
-            "status": self.status,                  # current status
-            "error_time": self.last_error[0],       # last registered error
-            "error_message": self.last_error[1],    # last registered error
-            "growth": -1.0,                         # plant's growth
-            "weight": -1.0,                         # plant's (measured) weight
-            "standard_deviation": -1.0,             # measured weight standard deviation
-            "picture": ""                           # last picture as a base-64 string
+            "status": self.status,  # current status
+            "error_time": self.last_error[0],  # last registered error
+            "error_message": str(self.last_error[1]),  # last registered error
+            "growth": -1.0,  # plant's growth
+            "weight": -1.0,  # plant's (measured) weight
+            "standard_deviation": -1.0,  # measured weight standard deviation
+            "picture": ""  # last picture as a base-64 string
         }
 
     def send_to_db(self) -> None:
@@ -178,35 +178,31 @@ class PhenoStation:
             measurements_list.append(self.measurements[key])
         save_to_csv(measurements_list, "data/measurements.csv")
 
-        json_body = [
-            {
-                "measurement": f"StationID_{self.station_id}",
-                "tags": {
-                    "station_id": f"{self.station_id}"
-                },
-                "time": datetime.now().strftime(DATE_FORMAT),
-                "fields": self.measurements
-            }
-        ]
+        data = {
+            "measurement": f"StationID_{self.station_id}",
+            "tags": {"station_id": f"{self.station_id}"},
+            "time": datetime.now().strftime(DATE_FORMAT),
+            "fields": self.measurements
+        }
 
         if self.connected:
             # Send data to the DB if the DB is reachable
             write_api = self.client.write_api(write_options=SYNCHRONOUS)
-            LOGGER.debug(f"Sending data to the DB: {json_body[0]}")
-            write_api.write_points(json_body)
+            LOGGER.debug(f"Sending data to the DB: {str(data)[:400]}")
+            write_api.write(bucket=self.bucket, org=self.org, record=data)
 
     def register_error(self, exception: Exception) -> None:
         """
         Register an exception by logging it, updating the station's status and sending it to the DB
         :param exception: The exception that occurred
         """
-        LOGGER.error(f"Error : {exception}")
+        LOGGER.error(f"{type(exception)}: {exception}")
         timestamp = datetime.now().strftime(DATE_FORMAT)
         self.status = -1
         self.last_error = (timestamp, exception)
         self.measurements["status"] = self.status
         self.measurements["error_time"] = self.last_error[0]
-        self.measurements["error_message"] = self.last_error[1]
+        self.measurements["error_message"] = str(self.last_error[1])
 
     def get_weight(self, n=5) -> tuple[float, float]:
         """
