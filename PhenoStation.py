@@ -134,7 +134,7 @@ class PhenoStation:
             LOGGER.debug("Resetting HX711")
             self.hx.reset()
         except hx711.GenericHX711Exception as e:
-            self.register_error(Exception(f"Error while resetting HX711 : {e}"))
+            self.register_error(type(e)(f"Error while resetting HX711 : {e}"))
         else:
             LOGGER.debug("HX711 reset")
 
@@ -261,7 +261,7 @@ class PhenoStation:
         try:
             self.cam.capture_file(file_output=path_img)
         except Exception as e:
-            self.register_error(Exception(f"Error while capturing the photo: {e}"))
+            self.register_error(type(e)(f"Error while capturing the photo: {e}"))
             path_img = ""
         self.cam.stop_preview()
         self.cam.stop()
@@ -284,7 +284,7 @@ class PhenoStation:
             self.measurements["picture"] = pic
             self.measurements["growth"] = growth_value
         except Exception as e:
-            self.register_error(Exception(f"Error while taking the photo: {e}"))
+            self.register_error(type(e)(f"Error while taking the photo: {e}"))
             self.disp.show_collecting_data("Error while taking the photo")
             time.sleep(5)
             return 0, 0
@@ -299,7 +299,7 @@ class PhenoStation:
             self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
             time.sleep(2)
         except Exception as e:
-            self.register_error(Exception(f"Error while getting the weight: {e}"))
+            self.register_error(type(e)(f"Error while getting the weight: {e}"))
             self.disp.show_collecting_data("Error while getting the weight")
             time.sleep(5)
             return 0, 0
@@ -312,7 +312,7 @@ class PhenoStation:
             self.disp.show_collecting_data("Data sent to the DB")
             time.sleep(2)
         except Exception as e:
-            self.register_error(Exception(f"Error while sending data to the DB: {e}"))
+            self.register_error(type(e)(f"Error while sending data to the DB: {e}"))
             self.disp.show_collecting_data("Error while sending data to the DB")
             time.sleep(5)
             return 0, 0
@@ -336,6 +336,12 @@ class PhenoStation:
         growth_value = -1
         if pic != "" and path_img != "":
             growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
+            if growth_value == 0:
+                self.register_error(RuntimeError("Error while processing the photo. "
+                                                 "Check that the plant is clearly visible."))
+                self.disp.show_collecting_data("Error while processing the photo")
+                time.sleep(5)
+                return pic, 0
             LOGGER.debug(f"Growth value : {growth_value}")
             self.disp.show_collecting_data(f"Growth value : {round(growth_value, 2)}")
             time.sleep(2)

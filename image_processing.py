@@ -74,8 +74,10 @@ def get_segment_list(image_path: str, channel: str = 'k', kernel_size: int = 20)
         _ = pcv.morphology.segment_path_length(segmented_img=segmented_img,
                                                objects=obj, label="default")
     # get segment lengths
-    path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
-
+    try:
+        path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
+    except KeyError as e:
+        return [0]
     return path_lengths
 
 
