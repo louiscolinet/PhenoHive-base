@@ -24,10 +24,9 @@ def main() -> None:
     error_count = 0
 
     while True:
-        is_shutdown = int(station.parser['Var_Verif']["is_shutdown"])
         station.disp.show_menu()
         try:
-            handle_button_presses(station, is_shutdown, n_round)
+            handle_button_presses(station, n_round)
         except Exception as e:
             error_count += 1
             station.register_error(exception=e)
@@ -39,11 +38,10 @@ def main() -> None:
                 time.sleep(5)
 
 
-def handle_button_presses(station: PhenoStation, is_shutdown: int, n_round: int) -> None:
+def handle_button_presses(station: PhenoStation, n_round: int) -> None:
     """
     Function to handle the button presses in the main menu
     :param station: station object
-    :param is_shutdown: shutdown flag
     :param n_round: number of measurement rounds done
     """
     if not GPIO.input(station.BUT_LEFT):
@@ -51,10 +49,7 @@ def handle_button_presses(station: PhenoStation, is_shutdown: int, n_round: int)
         time.sleep(1)
         handle_configuration_menu(station)
 
-    if not GPIO.input(station.BUT_RIGHT) or is_shutdown:
-        station.parser['Var_Verif']["is_shutdown"] = str(1)
-        with open(CONFIG_FILE, 'w') as configfile:
-            station.parser.write(configfile)
+    if not GPIO.input(station.BUT_RIGHT):
         time.sleep(1)
         handle_measurement_loop(station, n_round)
 
@@ -114,9 +109,11 @@ def handle_status_loop(station: PhenoStation) -> bool:
         station.disp.show_status()
         if not GPIO.input(station.BUT_RIGHT):
             # Resume
+            time.sleep(1)
             return True
         if not GPIO.input(station.BUT_LEFT):
             # Stop
+            time.sleep(1)
             return False
 
 
@@ -147,13 +144,13 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
             n_round += 1
 
         if not GPIO.input(station.BUT_RIGHT):
-            station.parser['Var_Verif']["is_shutdown"] = str(0)
-            with open(CONFIG_FILE, 'w') as configfile:
-                station.parser.write(configfile)
+            time.sleep(1)
             break
 
         if not GPIO.input(station.BUT_LEFT):
             continue_measurements = handle_status_loop(station)
+            if not continue_measurements:
+                break
             time.sleep(1)
     time.sleep(1)
 
