@@ -19,13 +19,17 @@ def main() -> None:
     Main function, initialize the station and start the main loop
     """
     LOGGER.info("Initializing the station")
-    station = PhenoStation.get_instance()  # Initialize the station
+    try:
+        station = PhenoStation.get_instance()  # Initialize the station
+    except Exception as e:
+        LOGGER.critical(f"Error while initializing the station: {type(e).__name__}: {e}")
+        raise e
     n_round = 0
     error_count = 0
 
     while True:
-        station.disp.show_menu()
         try:
+            station.disp.show_menu()
             handle_button_presses(station, n_round)
         except Exception as e:
             error_count += 1
