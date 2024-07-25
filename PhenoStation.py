@@ -25,7 +25,7 @@ class PhenoStation:
     It functions as a singleton. Use PhenoStation.get_instance() method to get an instance.
     """
     # Instance class variable for singleton
-    _instance = None
+    __instance = None
 
     # Station variables
     parser = None
@@ -54,16 +54,16 @@ class PhenoStation:
     measurements = {}  # Measurements dictionary, sent to the database each cycle
 
     # Station constants
-    WIDTH = 128
-    HEIGHT = 160
-    SPEED_HZ = 4000000
-    DC = 24
-    RST = 25
-    SPI_PORT = 0
-    SPI_DEVICE = 0
-    LED = 23
-    BUT_LEFT = 21
-    BUT_RIGHT = 16
+    WIDTH = -1
+    HEIGHT = -1
+    SPEED_HZ = -1
+    DC = -1
+    RST = -1
+    SPI_PORT = -1
+    SPI_DEVICE = -1
+    LED = -1
+    BUT_LEFT = -1
+    BUT_RIGHT = -1
 
     @staticmethod
     def get_instance():
@@ -72,9 +72,9 @@ class PhenoStation:
         Otherwise, return the current instance.
         :return: A PhenoStation instance
         """
-        if PhenoStation._instance is None:
+        if PhenoStation.__instance is None:
             PhenoStation()
-        return PhenoStation._instance
+        return PhenoStation.__instance
 
     def __init__(self) -> None:
         """
@@ -82,14 +82,18 @@ class PhenoStation:
         :raises RuntimeError: If trying to instantiate a new PhenoStation if one was already instantiated
                                 (use get_instance() instead)
         """
-        if PhenoStation._instance is not None:
+        if PhenoStation.__instance is not None:
             raise RuntimeError("PhenoStation class is a singleton. Use PhenoStation.get_instance() to initiate it.")
         else:
-            PhenoStation._instance = self
+            PhenoStation.__instance = self
 
         # Parse Config.ini file
         self.parser = configparser.ConfigParser()
-        self.parser.read('config.ini')
+        try:
+            self.parser.read('config.ini')
+        except configparser.ParsingError as e:
+            LOGGER.error(f"Failed to parse config file {e}")
+            raise RuntimeError(f"Failed to parse config file {e}")
 
         self.token = str(self.parser["InfluxDB"]["token"])
         self.org = str(self.parser["InfluxDB"]["org"])
@@ -116,6 +120,13 @@ class PhenoStation:
 
         # Screen initialization
         LOGGER.debug("Initializing screen")
+        self.WIDTH = int(self.parser["screen"]["width"])
+        self.HEIGHT = int(self.parser["screen"]["height"])
+        self.SPEED_HZ = int(self.parser["screen"]["speed_hz"])
+        self.DC = int(self.parser["screen"]["dc"])
+        self.RST = int(self.parser["screen"]["rst"])
+        self.SPI_PORT = int(self.parser["screen"]["spi_port"])
+        self.SPI_DEVICE = int(self.parser["screen"]["spi_device"])
         self.st7735 = TFT.ST7735(
             self.DC,
             rst=self.RST,
@@ -146,10 +157,13 @@ class PhenoStation:
         self.cam = Picamera2()
         GPIO.setwarnings(False)
 
+        self.LED = int(self.parser["Camera"]["led"])
         GPIO.setup(self.LED, GPIO.OUT)
         GPIO.output(self.LED, GPIO.HIGH)
 
         # Button init
+        self.BUT_LEFT = int(self.parser["Buttons"]["left"])
+        self.BUT_RIGHT = int(self.parser["Buttons"]["right"])
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
