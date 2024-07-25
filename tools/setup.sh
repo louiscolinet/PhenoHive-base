@@ -59,7 +59,7 @@ install_packages() {
 
 install_python_packages() {
     echo -e "${INFO}Installing necessary Python packages...${WHITE}"
-    if ! pip install -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore --no-cache-dir; then
+    if ! pip install -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore; then
         echo -e "${ERROR}Failed to install Python packages. Exiting.${WHITE}"
         exit 1
     fi
@@ -94,7 +94,7 @@ setup_service() {
     sed -i "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_DIR}|" tools/phenoHive.service
     sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" tools/phenoHive.service
     cp tools/phenoHive.service /etc/systemd/system
-    chmod 644 /etc/systemd/system/phenoHive.service
+    chmod 644 /lib/systemd/system/phenoHive.service
     chmod +x main.py
     systemctl daemon-reload
     systemctl enable phenoHive.service

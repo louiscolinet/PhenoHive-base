@@ -1,9 +1,9 @@
-numpy==1.26.4
+numpy<2.0.0
 configparser==7.0.0
 influxdb-client==1.44.0
 hx711==1.1.2.3
 adafruit-gpio==1.0.3
-pandas==2.2.2
+pandas
 statsmodels==0.14.1
 RPi.GPIO==0.7.1
 scipy==1.12.0
