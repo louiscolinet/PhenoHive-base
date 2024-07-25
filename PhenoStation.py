@@ -120,13 +120,13 @@ class PhenoStation:
 
         # Screen initialization
         LOGGER.debug("Initializing screen")
-        self.WIDTH = int(self.parser["screen"]["width"])
-        self.HEIGHT = int(self.parser["screen"]["height"])
-        self.SPEED_HZ = int(self.parser["screen"]["speed_hz"])
-        self.DC = int(self.parser["screen"]["dc"])
-        self.RST = int(self.parser["screen"]["rst"])
-        self.SPI_PORT = int(self.parser["screen"]["spi_port"])
-        self.SPI_DEVICE = int(self.parser["screen"]["spi_device"])
+        self.WIDTH = int(self.parser["Display"]["width"])
+        self.HEIGHT = int(self.parser["Display"]["height"])
+        self.SPEED_HZ = int(self.parser["Display"]["speed_hz"])
+        self.DC = int(self.parser["Display"]["dc"])
+        self.RST = int(self.parser["Display"]["rst"])
+        self.SPI_PORT = int(self.parser["Display"]["spi_port"])
+        self.SPI_DEVICE = int(self.parser["Display"]["spi_device"])
         self.st7735 = TFT.ST7735(
             self.DC,
             rst=self.RST,
