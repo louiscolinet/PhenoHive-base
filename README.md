@@ -211,7 +211,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
 5. Install the necessary Python packages:
    ```bash
    pip3 install --break-system-packages --root-user-action=ignore --no-cache-dir \
-    numpy>=1.22.0,<1.23 \
+    "numpy>=1.22.0,<1.23" \
     configparser==7.0.0 \
     influxdb-client==1.44.0 \
     hx711==1.1.2.3 \
