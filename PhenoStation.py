@@ -100,7 +100,7 @@ class PhenoStation:
         self.bucket = str(self.parser["InfluxDB"]["bucket"])
         self.url = str(self.parser["InfluxDB"]["url"])
 
-        self.station_id = str(self.parser["ID_station"]["ID"])
+        self.station_id = str(self.parser["Station"]["ID"])
         self.image_path = str(self.parser["Paths"]["image_path"])
         self.csv_path = str(self.parser["Paths"]["csv_path"])
 
@@ -174,6 +174,7 @@ class PhenoStation:
             "error_message": str(self.last_error[1]),  # last registered error
             "growth": -1.0,  # plant's growth
             "weight": -1.0,  # plant's (measured) weight
+            "weight_g": -1.0,  # plant's (measured) weight in grams (if calibrated)
             "standard_deviation": -1.0,  # measured weight standard deviation
             "picture": ""  # last picture as a base-64 string
         }
@@ -303,6 +304,7 @@ class PhenoStation:
         try:
             weight, std_dev = self.weight_pipeline()
             self.measurements["weight"] = weight
+            self.measurements["weight_g"] = weight * self.load_cell_cal
             self.measurements["standard_deviation"] = std_dev
 
             # Measurement finished, display the weight
@@ -366,6 +368,7 @@ class PhenoStation:
         self.disp.show_collecting_data("Measuring weight")
         start = time.time()
         median_weight, std_dev = self.get_weight(n)
+        median_weight = median_weight - self.tare
         if median_weight == -1.0:
             return -1.0, -1.0
         elapsed = time.time() - start

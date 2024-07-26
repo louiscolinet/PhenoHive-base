@@ -21,16 +21,17 @@ def main() -> None:
     LOGGER.info("Initializing the station")
     try:
         station = PhenoStation.get_instance()  # Initialize the station
+        running = int(station.parser['station']['running'])
     except Exception as e:
         LOGGER.critical(f"Error while initializing the station: {type(e).__name__}: {e}")
         raise e
+
     n_round = 0
     error_count = 0
-
     while True:
         try:
             station.disp.show_menu()
-            handle_button_presses(station, n_round)
+            handle_button_presses(station, running, n_round)
         except Exception as e:
             error_count += 1
             station.register_error(exception=e)
@@ -42,10 +43,11 @@ def main() -> None:
                 time.sleep(5)
 
 
-def handle_button_presses(station: PhenoStation, n_round: int) -> None:
+def handle_button_presses(station: PhenoStation, running: int, n_round: int) -> None:
     """
     Function to handle the button presses in the main menu
     :param station: station object
+    :param running: flag to indicate if the station is running (1) or not (0)
     :param n_round: number of measurement rounds done
     """
     if not GPIO.input(station.BUT_LEFT):
@@ -53,7 +55,10 @@ def handle_button_presses(station: PhenoStation, n_round: int) -> None:
         time.sleep(1)
         handle_configuration_menu(station)
 
-    if not GPIO.input(station.BUT_RIGHT):
+    if not GPIO.input(station.BUT_RIGHT) or running:
+        station.parser['station']['running'] = "1"
+        with open(CONFIG_FILE, 'w') as configfile:
+            station.parser.write(configfile)
         time.sleep(1)
         handle_measurement_loop(station, n_round)
 
@@ -94,6 +99,8 @@ def handle_calibration_loop(station: PhenoStation) -> None:
     """
     station.tare = station.get_weight(20)[0]
     station.parser['cal_coef']["tare"] = str(station.tare)
+    with open(CONFIG_FILE, 'w') as configfile:
+        station.parser.write(configfile)
     weight = 0
     while True:
         station.disp.show_cal_menu(weight, station.tare)
@@ -148,12 +155,20 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
             n_round += 1
 
         if not GPIO.input(station.BUT_RIGHT):
+            # Stop the measurements
+            station.parser['station']['running'] = "0"
+            with open(CONFIG_FILE, 'w') as configfile:
+                station.parser.write(configfile)
             time.sleep(1)
             break
 
         if not GPIO.input(station.BUT_LEFT):
             continue_measurements = handle_status_loop(station)
             if not continue_measurements:
+                # Stop the measurements
+                station.parser['station']['running'] = "0"
+                with open(CONFIG_FILE, 'w') as configfile:
+                    station.parser.write(configfile)
                 break
             time.sleep(1)
     time.sleep(1)
