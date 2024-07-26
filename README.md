@@ -1,6 +1,15 @@
+<picture>
+    <div style="display: flex; justify-content: center;">
+        <img alt="PhenoHive Logo" src="assets/logo_phenohive.jpg" style="width: 50%; height: auto;">
+    </div>
+</picture>
+
+-----
+
 # PhenoHive
 
 Low-cost Raspberry pi-based phenotyping station.
+Based on a [prototype](https://github.com/marty12342000/PhenoHive) by M. Lallemand and L. Lemaire
 
 ## Table of contents
 
@@ -213,7 +222,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
    ```
 6. Download and install the ST7735 library:
    ```bash
-   git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
+   git clone https://github.com/degzero/Python_ST7735.git
    cd Python_ST7735
    python3 setup.py install
    ```
@@ -265,3 +274,16 @@ If you run into any trouble or if you are trying to install on another OS, the s
    - The Raspberry Pi should appear in the list with "Raspberry Pi Foundation" next to the MAC Address, its IP will be just above.
 4. Connect to the Raspberry Pi using SSH with `ssh root@<RASPBERRY_PI_IP>` (replace `<RASPBERRY_PI_IP>` with the IP found at step 3). Enter the password when prompted (default: phenohive).
 5. You can close the connection at any time using `exit`.
+
+-----
+
+<picture>
+    <div style="display: flex; justify-content: center;">
+        <img alt="UCLouvain Logo" src="assets/logo_UCLouvain_no_bg.png" style="width: 50%; height: auto;">
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <img alt="ELIA Logo" src="assets/logo_elia_no_bg.png" style="width: auto; height: 25%; margin-right: 25px;">
+        <img alt="icteam Logo" src="assets/logo_icteam_no_bg.png" style="width: auto; height: 25%;">
+    </div>
+</picture>
+
