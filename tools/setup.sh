@@ -59,7 +59,7 @@ install_packages() {
 
 install_python_packages() {
     echo -e "${INFO}Installing necessary Python packages...${WHITE}"
-    if ! pip install -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore; then
+    if ! pip install -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore --no-cache-dir; then
         echo -e "${ERROR}Failed to install Python packages. Exiting.${WHITE}"
         exit 1
     fi
