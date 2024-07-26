@@ -27,9 +27,6 @@ check_root() {
 }
 
 check_directory() {
-    if [ -f "setup.config" ]; then
-        cd ..
-    fi
     if [ ! -f main.py ]; then
         echo -e "${ERROR}Please run the script from the PhenoHive directory. Current directory: $(pwd)${WHITE}"
         exit 1

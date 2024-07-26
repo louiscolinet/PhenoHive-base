@@ -73,7 +73,8 @@ class Display:
         image = image.rotate(0).resize(self.SIZE)
         self.SCREEN.display(image)
 
-    def show_measuring_menu(self, weight: float, growth: int, time_now: str, time_next_measure: str, n_rounds: int) -> None:
+    def show_measuring_menu(self, weight: float, growth: int, time_now: str, time_next_measure: str,
+                            n_rounds: int) -> None:
         """
         Show the measuring menu
         :param weight: weight of the plant

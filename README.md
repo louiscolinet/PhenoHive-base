@@ -42,7 +42,7 @@ The design is based on a Raspberry Pi Zero W running on DietPi OS with:
 - A Raspberry Pi Camera and a LED lightning strip connected to a KY-019 relay module to take pictures of the plant.
 - A ST7735 LCD screen and two buttons to interact with the user.
 
-The software is written in Python, with a [bash setup script](tools/setup.sh) to set up the system.
+The software is written in Python, with a [bash setup script](setup.sh) to set up the system.
 The Python code is divided in five files:
 - [main.py](main.py) is the main file, it initialises the system and handles the user interactions as well as the different pipelines.
 - [PhenoStation.py](PhenoStation.py) contains a singleton class that handles the hardware interactions. It contains the different variables and methods to take pictures, measure weight, and communicate with the database.
@@ -124,7 +124,8 @@ To install the system, you can either:
 
 ### Operating System
 
-The steps below are for DietPi OS, but the [automated setup script](tools/setup.sh) can be used on other Debian-based OS (e.g. Raspberry Pi OS).
+The steps below are for DietPi OS,
+but the [automated setup script](setup.sh) can be used on other Debian-based OS (e.g. Raspberry Pi OS).
 If you run into any trouble or if you are trying to install on another OS, the steps to set up the project manually are given in the [manual setup](#manual-setup) section.
 
 #### Using the pre-built image
@@ -157,7 +158,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
 
 #### Manual installation
 
-1. Download the latest version of DietPi OS from the [official website](https://dietpi.com/#downloadinfo).
+1. Download the latest version of DietPi OS [from the official website](https://dietpi.com/#downloadinfo).
 2. Flash the image on a microSD card using [Balena Etcher](https://www.balena.io/etcher/).
 3. Insert the microSD card in the Raspberry Pi and power it on.
 4. Connect to the Raspberry Pi using a keyboard and a screen and follow the DietPi setup.
@@ -170,7 +171,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
 1. Ensure that the Raspberry Pi is connected to the internet; you can check the connection using `ping google.com`.
 2. Clone the repository using `git clone https://github.com/Oldgram/PhenoHive.git PhenoHive`. If you don't have git installed, you can install it using `apt-get install git`.
 3. Navigate to the PhenoHive folder using `cd PhenoHive`.
-4. Run the setup script using `bash tools/setup.sh`. This script will install the necessary packages, set up the system, and enable the service.
+4. Run the setup script using `bash setup.sh`. This script will install the necessary packages, set up the system, and enable the service.
    - _Note:_ Due to the limited resources of the Raspberry Pi Zero W, the setup script can take up 2 to 3 hours to complete.
    - If the setup was successful, you should see a blue message saying "Setup complete. A reboot is required before running the service.".
    - If you encounter any error during the setup, follow the steps given in the [manual setup](#manual-setup) section below.

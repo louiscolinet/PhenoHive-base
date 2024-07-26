@@ -51,7 +51,7 @@ class PhenoStation:
     connected = False  # True if the station is connected to influxDB
     status = 0  # Current station status (-1 = Error, 0 = OK, 1 = Processing)
     last_error = ("", None)  # Last error registered as a tuple of the form (timestamp: str, e:Exception)
-    measurements = {}  # Measurements dictionary, sent to the database each cycle
+    measurements = {}  # Dictionnary to store the different measurements, sent to the database each cycle
 
     # Station constants
     WIDTH = -1
@@ -68,7 +68,7 @@ class PhenoStation:
     @staticmethod
     def get_instance():
         """
-        Static access method to create a new instance of the station if not already initialized.
+        Static access method to create a new instance of the station if not already initialised.
         Otherwise, return the current instance.
         :return: A PhenoStation instance
         """
@@ -115,11 +115,11 @@ class PhenoStation:
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.connected = self.client.ping()
         self.last_connection = datetime.now().strftime(DATE_FORMAT)
-        LOGGER.debug(f"InfluxDB client initialized with url : {self.url}, org : {self.org} and token : {self.token}" +
+        LOGGER.debug(f"InfluxDB client initialised with url : {self.url}, org : {self.org} and token : {self.token}" +
                      f", Ping returned : {self.connected}")
 
-        # Screen initialization
-        LOGGER.debug("Initializing screen")
+        # Screen initialisation
+        LOGGER.debug("Initialising screen")
         self.WIDTH = int(self.parser["Display"]["width"])
         self.HEIGHT = int(self.parser["Display"]["height"])
         self.SPEED_HZ = int(self.parser["Display"]["speed_hz"])
@@ -167,7 +167,7 @@ class PhenoStation:
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        # Measurements dictionary
+        # Initial (placeholder) measurements
         self.measurements = {
             "status": self.status,  # current status
             "error_time": self.last_error[0],  # last registered error
@@ -236,12 +236,12 @@ class PhenoStation:
         Take a photo, display it on the screen and return it in base64
         :return: a tuple with the photo in base64 and the path to the photo
         """
-        # Take photo
+        # Take the photo
         GPIO.output(self.LED, GPIO.LOW)
         path_img = self.save_photo(preview=False, time_to_wait=6)
         time.sleep(2)
         GPIO.output(self.LED, GPIO.HIGH)
-        # Display photo
+        # Display the photo
         if path_img != "":
             LOGGER.debug(f"Photo taken and saved at {path_img}")
             self.disp.show_image(path_img)
@@ -256,7 +256,7 @@ class PhenoStation:
     def save_photo(self, preview: bool = False, time_to_wait: int = 8) -> str:
         """
         Take a photo and save it
-        :param preview: if True, the photo will be saved as "img.jpg" (used for the display)
+        :param preview: if True the photo will be saved as "img.jpg" (used for the display)
         :param time_to_wait: time to wait before taking the photo (in seconds)
         :return: the path to the photo
         """
@@ -288,7 +288,7 @@ class PhenoStation:
         self.disp.show_collecting_data("Starting measurement pipeline")
         time.sleep(1)
 
-        # Take and process photo
+        # Take and process the photo
         try:
             self.disp.show_collecting_data("Taking photo")
             pic, growth_value = self.picture_pipeline()
@@ -390,7 +390,7 @@ class DebugHx711(hx711.HX711):
         return super()._read(times)
 
     def get_raw_data(self, times=5):
-        # Modified read function to debug (with a max of 1000 tries) to avoid infinite loops
+        # Modified read function to debug (with a max of 1000 tries) to avoid infinite loops.
         # Furthermore, we check if the data is valid (not False or -1) before appending it to the list
         data_list = []
         count = 0

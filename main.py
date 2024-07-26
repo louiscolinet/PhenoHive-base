@@ -16,7 +16,7 @@ LOGGER = None
 
 def main() -> None:
     """
-    Main function, initialize the station and start the main loop
+    Main function, initialise the station and start the main loop
     """
     LOGGER.info("Initializing the station")
     try:
@@ -36,7 +36,7 @@ def main() -> None:
             error_count += 1
             station.register_error(exception=e)
             if error_count > 10:
-                # Reached unhandled error threshold, exiting the program
+                # Reached an unhandled error threshold, exiting the program
                 LOGGER.critical("Critical: too many exception raised, exiting.")
                 raise RuntimeError("Too many exception raised, exiting. Check logs for more details.")
             else:
@@ -94,7 +94,8 @@ def handle_preview_loop(station: PhenoStation) -> None:
 
 def handle_calibration_loop(station: PhenoStation) -> None:
     """
-    Calibration loop. This functions takes the tare value and displays the current weight on the screen
+    Calibration loop.
+    This function takes the tare value and displays the current weight on the screen
     :param station: station object
     """
     station.tare = station.get_weight(20)[0]
