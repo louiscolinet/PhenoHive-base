@@ -91,13 +91,13 @@ setup_service() {
     echo -e "${INFO}Setting up PhenoHive service...${WHITE}"
     # Modify the WorkingDirectory and ExecStart in the service file to point to the correct (current) directory
     PROJECT_DIR=$(pwd)
-    sed -i "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_DIR}|" tools/phenoHive.service
-    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" tools/phenoHive.service
-    cp tools/phenoHive.service /etc/systemd/system
-    chmod 644 /lib/systemd/system/phenoHive.service
+    sed -i "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_DIR}|" tools/phenohive.service
+    sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python ${PROJECT_DIR}/main.py|" tools/phenohive.service
+    cp tools/phenohive.service /lib/systemd/system/
+    chmod 644 /lib/systemd/system/phenohive.service
     chmod +x main.py
     systemctl daemon-reload
-    systemctl enable phenoHive.service
+    systemctl enable phenohive.service
 }
 
 echo -e "${INFO}PhenoHive setup script.\n" \
