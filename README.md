@@ -7,7 +7,7 @@ Low-cost Raspberry pi-based phenotyping station.
 - [Project Description](#project-description)
 - [System Operation](#system-operation)
   - [Configuration](#configuration)
-  - [Initialization](#initialization)
+  - [Initialisation](#initialisation)
   - [Configuration Menu](#configuration-menu)
   - [Measurement Mode](#measurement-mode)
     - [Measurement pipeline](#measurement-pipeline)
@@ -48,7 +48,7 @@ The Python code is divided in five files:
 Each variable of the station, such as the different pins of each sensor,
 the time interval between each measurement, etc. is set in [config.ini](config.ini).
 
-### Initialization
+### Initialisation
 
 Once the system has been set up (see [Installation](#installation) for more details), [main.py](main.py) will be run at startup.
 It will initialise the logger, instantiate the PhenoStation class, and start the main loop.
@@ -178,7 +178,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
 4. Install the necessary packages:
    ```bash
    sudo apt-get update
-   sudo apt-get install --break-system-packages --root-user-action=ignore --no-cache-dir\
+   sudo apt-get install \
     build-essential \
     cmake \
     gfortran \
@@ -200,7 +200,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
    ```
 5. Install the necessary Python packages:
    ```bash
-   pip3 install \
+   pip3 install --break-system-packages --root-user-action=ignore --no-cache-dir \
     numpy>=1.22.0,<1.23 \
     configparser==7.0.0 \
     influxdb-client==1.44.0 \
