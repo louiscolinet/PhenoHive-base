@@ -19,15 +19,15 @@ Based on a [prototype](https://github.com/marty12342000/PhenoHive) by M. Lallem
     - [Display and status](#display-and-status)
     - [Measurement format](#measurement-format)
   - [Logging and error handling](#logging-and-error-handling)
-  - [Installation](#installation)
-    - [Operating System](#operating-system)
-      - [Using the pre-built image](#using-the-pre-built-image)
-      - [Automated installation](#automated-installation)
-      - [Manual installation](#manual-installation)
-    - [Project setup](#project-setup)
-      - [Automated setup](#automated-setup)
-      - [Manual setup](#manual-setup)
-    - [SSH connection](#ssh-connection)
+- [Installation](#installation)
+  - [Operating System](#operating-system)
+    - [Using the pre-built image](#using-the-pre-built-image)
+    - [Automated installation](#automated-installation)
+    - [Manual installation](#manual-installation)
+  - [Project setup](#project-setup)
+    - [Automated setup](#automated-setup)
+    - [Manual setup](#manual-setup)
+  - [SSH connection](#ssh-connection)
 
 ## Project Description
 
@@ -126,7 +126,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
 
 #### Using the pre-built image
 
-1. Download the pre-built image from [here](https://www.youtube.com/watch?v=dQw4w9WgXcQ) !!TODO!!.
+1. Download the pre-built image from [here](placeholder) (placeholder, to be added).
 2. Flash the image on a microSD card using [Balena Etcher](https://www.balena.io/etcher/).
 3. Insert the microSD card in the Raspberry Pi Zero W and power it on.
 4. Connect to the Raspberry Pi Zero W using a keyboard and a screen or via SSH (default login: root, password: phenohive).
