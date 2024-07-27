@@ -6,7 +6,13 @@ import statistics
 import configparser
 
 
-def get_weight(hx, n=20):
+def get_weight(hx: HX711, n: int = 20) -> float:
+    """
+    Get the weight from the load cell (median of n measurements)
+    :param hx: HX711 controller
+    :param n: number of measurements to take (default: 20)
+    :return: the median of the measurements
+    """
     measurements = hx.get_raw_data(n)
     if not measurements:
         raise RuntimeError("No data received from the load cell")
@@ -19,7 +25,12 @@ def get_weight(hx, n=20):
     return median
 
 
-def calibration_mode(hx):
+def calibration_mode(hx: HX711) -> float:
+    """
+    Calibration mode, get the real weight and calculate the calibration coefficient with the measured weight
+    :param hx: HX711 controller
+    :return: the calibration coefficient
+    """
     real_weight = input("Enter the real weight (in g): ")
     print("Weighting")
     measured = get_weight(hx, 20) - tare
@@ -28,12 +39,17 @@ def calibration_mode(hx):
     return coef
 
 
-def measuring_mode(hx, c):
+def measuring_mode(hx: HX711, c: float) -> None:
+    """
+    Measuring mode, convert the measured weight to grams using the calibration coefficient
+    :param hx: HX711 controller
+    :param c: calibration coefficient
+    """
     k = 0
     while k != -1:
         k = input("Enter the number of loops to average the weight, -1 to exit:")
         if k == "-1":
-            return -1
+            return
         print("Measuring")
         measured = get_weight(hx, int(k)) - tare
         # Calculate the weight in g
@@ -42,6 +58,7 @@ def measuring_mode(hx, c):
 
 
 if __name__ == "__main__":
+    """ Main function, load the configuration file and starts the different modes """
     path_to_config = input("Enter the path to the config file (default: '../config.ini'): ")
 
     if path_to_config == "":
