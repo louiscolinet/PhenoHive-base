@@ -5,7 +5,7 @@
 # It is intended to be run on a fresh install on a Debian Linux Distribution (Raspbian or DietPi)
 
 CONFIG_FILE="tools/setup.config"
-REQUIREMENTS_FILE="tools/requirements.txt"
+REQUIREMENTS_FILE="requirements.txt"
 
 # Color codes for the outputs
 ERROR='\033[0;31m'
@@ -56,7 +56,7 @@ install_packages() {
 
 install_python_packages() {
     echo -e "${INFO}Installing necessary Python packages...${WHITE}"
-    if ! pip install -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore --no-cache-dir; then
+    if ! pip install -v -r $REQUIREMENTS_FILE --break-system-packages --root-user-action=ignore --no-cache-dir; then
         echo -e "${ERROR}Failed to install Python packages. Exiting.${WHITE}"
         exit 1
     fi
@@ -64,7 +64,7 @@ install_python_packages() {
 
 install_st7735() {
     echo -e "${INFO}Installing ST7735 library...${WHITE}"
-    git clone https://github.com/degzero/Python_ST7735.git >> /dev/null 2>&1
+    git clone https://github.com/degzero/Python_ST7735.git
     cd Python_ST7735 || echo -e "${ERROR}Python_ST335 could not be installed: Could not find directory.${WHITE}"
     python3 setup.py install
     cd ..
