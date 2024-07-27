@@ -282,9 +282,5 @@ If you run into any trouble or if you are trying to install on another OS, the s
     <div style="display: flex; justify-content: center;">
         <img alt="UCLouvain Logo" src="assets/logo_UCLouvain_no_bg.png" style="width: 50%; height: auto;">
     </div>
-    <div style="display: flex; justify-content: center; align-items: center;">
-        <img alt="ELIA Logo" src="assets/logo_elia_no_bg.png" style="width: auto; height: 25%; margin-right: 25px;">
-        <img alt="icteam Logo" src="assets/logo_icteam_no_bg.png" style="width: auto; height: 25%;">
-    </div>
 </picture>
 
