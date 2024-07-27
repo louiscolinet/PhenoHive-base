@@ -144,7 +144,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
 1. Download the latest version of DietPi OS from the [official website](https://dietpi.com/#downloadinfo).
 2. Flash the image on a microSD card using [Balena Etcher](https://www.balena.io/etcher/).
 3. You should have two partitions on the microSD card, one named "bootfs" and the other named "rootfs".
-4. Copy the files located in the [tools/dietpi](tools/dietpi) folder to the "bootfs" partition. A detailed breakdown of the files is given in [DietPi_files.md](DietPi_files.md).
+4. Copy the files located in the [tools/dietpi](tools/dietpi) folder to the "bootfs" partition. A detailed breakdown of the files is given in [DietPi_files.md](tools/dietpi/DietPi_files.md).
 5. Modify the [dietpi-wifi.txt](tools/dietpi/dietpi-wifi.txt) file to include your Wi-Fi network SSID and password (default: SSID=PhenoHive, Password=Phenohive).
 6. Insert the microSD card in the Raspberry Pi Zero W and power it on.
 7. Connect to the Raspberry Pi Zero W using a keyboard and a screen or via SSH (default login: root, password: phenohive).
