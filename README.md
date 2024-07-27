@@ -314,4 +314,4 @@ Enter the password when prompted (default: phenohive).
 
 -----
 
-![UCLouvain Logo](assets/logo_UCLouvain_no_bg.png)
+![UCLouvain Logo](assets/logo_UCLouvain.jpg)
