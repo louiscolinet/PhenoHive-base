@@ -1,8 +1,4 @@
-<picture>
-    <div style="display: flex; justify-content: center;">
-        <img alt="PhenoHive Logo" src="assets/logo_phenohive.jpg" style="width: 50%; height: auto;">
-    </div>
-</picture>
+![PhenoHive Logo](assets/logo_phenohive.jpg)
 
 -----
 
@@ -269,18 +265,53 @@ If you run into any trouble or if you are trying to install on another OS, the s
 1. Make sure that you are connected to the same network as the Raspberry Pi.
 2. Find your current IP using `ifconfig /all` (on Windows or macOS) or `ip a` (on Linux).
    - You should see an IP address in the form of `192.168.1.X`, `10.42.0.X` or similar.
-   - If your IP is, for example `192.168.34.17`, than your IP range is `192.168.34.0/24`
+   Example output of `ifconfig /all`:
+   ```bash
+   PS C:\Users\goffi> ipconfig /all
+    [...]
+    Carte réseau sans fil Wi-Fi :
+    
+        Suffixe DNS propre à la connexion. . . :
+        Description. . . . . . . . . . . . . . : Killer(R) Wi-Fi 6 AX1650i 160MHz Wireless Network Adapter (201NGW)
+        Adresse physique . . . . . . . . . . . : 70-A8-D3-1B-15-93
+        DHCP activé. . . . . . . . . . . . . . : Oui
+        Configuration automatique activée. . . : Oui
+        Adresse IPv6 de liaison locale. . . . .: fe80::4101:1239:213e:be14%2(préféré)
+        Adresse IPv4. . . . . . . . . . . . . .: 192.168.166.174(préféré)
+        Masque de sous-réseau. . . . . . . . . : 255.255.255.0
+        Bail obtenu. . . . . . . . . . . . . . : samedi 17 juillet 2024 09:40:54
+        Bail expirant. . . . . . . . . . . . . : samedi 17 juillet 2024 10:40:52
+        Passerelle par défaut. . . . . . . . . : 192.168.166.254
+        Serveur DHCP . . . . . . . . . . . . . : 192.168.166.254
+        IAID DHCPv6 . . . . . . . . . . . : 40937683
+        DUID de client DHCPv6. . . . . . . . : 00-01-00-01-2A-30-89-94-08-8F-C3-64-23-E1
+        Serveurs DNS. . .  . . . . . . . . . . : 192.168.166.254
+        NetBIOS sur Tcpip. . . . . . . . . . . : Activé
+   ```
+   - If your IP is, for example `192.168.34.17`, than your IP range is `192.168.34.0/24`.
+   In the above example, the IP is `192.168.166.254`, so the IP range is `192.168.166.0/24`.
 3. Find the IP address of the Raspberry Pi:
    - Using [nmap](https://nmap.org/), scan the network using `nmap -sn <YOUR_IP_RANGE>` (replace `<YOUR_IP_RANGE>` with your IP range found at step 2).
    - The Raspberry Pi should appear in the list with "Raspberry Pi Foundation" next to the MAC Address, its IP will be just above.
-4. Connect to the Raspberry Pi using SSH with `ssh root@<RASPBERRY_PI_IP>` (replace `<RASPBERRY_PI_IP>` with the IP found at step 3). Enter the password when prompted (default: phenohive).
+   - Example:
+   ```bash
+    PS C:\Users\goffi> nmap -sn 192.168.166.0/24
+    Starting Nmap 7.95 ( https://nmap.org ) at 2024-07-17 09:47 Paris, Madrid (heure dÆÚtÚ)
+    Nmap scan report for 192.168.166.16
+    Host is up (0.013s latency).
+    MAC Address: B8:27:EB:BF:6D:1A (Raspberry Pi Foundation)
+    Nmap scan report for 192.168.166.254
+    Host is up (0.017s latency).
+    MAC Address: 4E:A5:88:52:12:F3 (Unknown)
+    Nmap scan report for 192.168.166.174
+    Host is up.
+    Nmap done: 256 IP addresses (3 hosts up) scanned in 2.92 seconds
+   ```
+   Here, the Raspberry Pi has the IP `192.168.166.16` (the first in the list).
+4. Connect to the Raspberry Pi using SSH with `ssh root@<RASPBERRY_PI_IP>` (replace `<RASPBERRY_PI_IP>` with the IP found at step 3).
+Enter the password when prompted (default: phenohive).
 5. You can close the connection at any time using `exit`.
 
 -----
 
-<picture>
-    <div style="display: flex; justify-content: center;">
-        <img alt="UCLouvain Logo" src="assets/logo_UCLouvain_no_bg.png" style="width: 50%; height: auto;">
-    </div>
-</picture>
-
+![UCLouvain Logo](assets/logo_UCLouvain_no_bg.png)
