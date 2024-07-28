@@ -105,9 +105,10 @@ def get_total_length(image_path: str, channel: str = 'k', kernel_size: int = 20)
     :param channel: CMYK channel for conversion from RGB to CMYK colorspace
     (c = cyan, m = magenta, y = yellow, k=black)
     :param kernel_size: kernel size for the closing operation
+    :raises: KeyError if no segments are found in the image
     :return: the total length of the plant skeleton
     """
-
+    # May raise a KeyError if no segments are found
     segment_list = get_segment_list(image_path, channel, kernel_size)
 
     # Get the sum of segment lengths
