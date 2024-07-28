@@ -347,10 +347,11 @@ class PhenoStation:
         # Process the segment lengths to get the growth value
         growth_value = -1
         if pic != "" and path_img != "":
-            growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
-            if growth_value == 0:
-                self.register_error(RuntimeError("Error while processing the photo. "
-                                                 "Check that the plant is clearly visible."))
+            try:
+                growth_value = get_total_length(image_path=path_img, channel=self.channel, kernel_size=self.kernel_size)
+            except KeyError:
+                self.register_error(KeyError("Error while processing the photo, no segment found in the image."
+                                             "Check that the plant is clearly visible."))
                 self.disp.show_collecting_data("Error while processing the photo")
                 time.sleep(5)
                 return pic, 0

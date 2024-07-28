@@ -49,6 +49,7 @@ def get_segment_list(image_path: str, channel: str = 'k', kernel_size: int = 20)
     :param channel: CMYK channel for conversion from RGB to CMYK colorspace
     (c = cyan, m = magenta, y = yellow, k=black)
     :param kernel_size: kernel size for the closing operation
+    :raises: KeyError if no segments are found in the image
     :return: list of segments lengths
     """
     pcv.params.debug = None
@@ -92,10 +93,8 @@ def get_segment_list(image_path: str, channel: str = 'k', kernel_size: int = 20)
         _ = pcv.morphology.segment_path_length(segmented_img=segmented_img,
                                                objects=obj, label="default")
     # Get segment lengths
-    try:
-        path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
-    except KeyError:
-        return [0]
+    # Will raise a KeyError if no segments are found
+    path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
     return path_lengths
 
 
