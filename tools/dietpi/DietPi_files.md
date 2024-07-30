@@ -94,6 +94,14 @@ Key (password): `aWIFI_SSID[0]='PhenoHive'`
 
 ## `config.txt`
 
+### Enable picamera module and picamera detection
+
+Warning: be sure to remove the leading '#'
+
+Line 59: `#start_x=1` -> `start_x=1`
+
+Add line 60: `camera_auto_detect=0`
+
 ### Enable SPI interface
 
 Warning: be sure to remove the leading '#'
