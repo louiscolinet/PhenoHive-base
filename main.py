@@ -21,7 +21,7 @@ def main() -> None:
     LOGGER.info("Initializing the station")
     try:
         station = PhenoStation.get_instance()  # Initialize the station
-        running = int(station.parser['station']['running'])
+        running = int(station.parser['Station']['running'])
     except Exception as e:
         LOGGER.critical(f"Error while initializing the station: {type(e).__name__}: {e}")
         raise e
@@ -56,7 +56,7 @@ def handle_button_presses(station: PhenoStation, running: int, n_round: int) -> 
         handle_configuration_menu(station)
 
     if not GPIO.input(station.BUT_RIGHT) or running:
-        station.parser['station']['running'] = "1"
+        station.parser['Station']['running'] = "1"
         with open(CONFIG_FILE, 'w') as configfile:
             station.parser.write(configfile)
         time.sleep(1)
@@ -157,7 +157,7 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
 
         if not GPIO.input(station.BUT_RIGHT):
             # Stop the measurements
-            station.parser['station']['running'] = "0"
+            station.parser['Station']['running'] = "0"
             with open(CONFIG_FILE, 'w') as configfile:
                 station.parser.write(configfile)
             time.sleep(1)
@@ -167,7 +167,7 @@ def handle_measurement_loop(station: PhenoStation, n_round: int) -> None:
             continue_measurements = handle_status_loop(station)
             if not continue_measurements:
                 # Stop the measurements
-                station.parser['station']['running'] = "0"
+                station.parser['Station']['running'] = "0"
                 with open(CONFIG_FILE, 'w') as configfile:
                     station.parser.write(configfile)
                 break
