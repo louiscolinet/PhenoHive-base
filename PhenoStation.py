@@ -1,5 +1,6 @@
 import base64
 import configparser
+import os
 import statistics
 import time
 import Adafruit_GPIO.SPI as SPI
@@ -52,6 +53,7 @@ class PhenoStation:
     status = 0  # Current station status (-1 = Error, 0 = OK, 1 = Processing)
     last_error = ("", None)  # Last error registered as a tuple of the form (timestamp: str, e:Exception)
     measurements = {}  # Dictionnary to store the different measurements, sent to the database each cycle
+    to_save = []  # Measurements to save to the csv file
 
     # Station constants
     WIDTH = -1
@@ -178,6 +180,7 @@ class PhenoStation:
             "standard_deviation": -1.0,  # measured weight standard deviation
             "picture": ""  # last picture as a base-64 string
         }
+        self.to_save = ["growth", "weight", "weight_g", "standard_deviation"]
 
     def send_to_db(self) -> None:
         """
@@ -186,17 +189,22 @@ class PhenoStation:
         """
         # Check connection with the database
         self.connected = self.client.ping()
+        timestamp = datetime.now().strftime(DATE_FORMAT)
+
+        # If the csv file does not exist, create it with the headers
+        if not os.path.exists(self.csv_path):
+            save_to_csv(["time"] + self.to_save, self.csv_path)
 
         # Save data to the corresponding csv file
-        measurements_list = []
-        for key in sorted(self.measurements.keys()):
+        measurements_list = [timestamp]
+        for key in self.to_save:
             measurements_list.append(self.measurements[key])
         save_to_csv(measurements_list, "data/measurements.csv")
 
         data = {
             "measurement": f"StationID_{self.station_id}",
             "tags": {"station_id": f"{self.station_id}"},
-            "time": datetime.now().strftime(DATE_FORMAT),
+            "time": timestamp,
             "fields": self.measurements
         }
 
