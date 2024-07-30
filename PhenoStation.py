@@ -182,10 +182,11 @@ class PhenoStation:
         }
         self.to_save = ["growth", "weight", "weight_g", "standard_deviation"]
 
-    def send_to_db(self) -> None:
+    def send_to_db(self) -> bool:
         """
         Saves the measurements to the csv file, then sends it to InfluxDB (if connected)
         Uses `PhenoStation.measurements` dictionary containing the measurements and their values.
+        :return True if the data was sent to the DB, False otherwise
         """
         # Check connection with the database
         self.connected = self.client.ping()
@@ -213,6 +214,9 @@ class PhenoStation:
             write_api = self.client.write_api(write_options=SYNCHRONOUS)
             LOGGER.debug(f"Sending data to the DB: {str(data)[:400]}")
             write_api.write(bucket=self.bucket, org=self.org, record=data)
+            return True
+        else:
+            return False
 
     def register_error(self, exception: Exception) -> None:
         """
@@ -327,9 +331,13 @@ class PhenoStation:
         # Send data to the DB
         try:
             self.disp.show_collecting_data("Sending data to the DB")
-            self.send_to_db()
-            LOGGER.debug("Data sent to the DB")
-            self.disp.show_collecting_data("Data sent to the DB")
+            if self.send_to_db():
+                LOGGER.debug("Data sent to the DB")
+                self.disp.show_collecting_data("Data sent to the DB")
+            else:
+                # Data could not be sent to the database but the measurements were still saved to the csv file
+                LOGGER.warning("Could not send data to the DB, no connection")
+                self.disp.show_collecting_data("Could not send data to the DB, no connection")
             time.sleep(2)
         except Exception as e:
             self.register_error(type(e)(f"Error while sending data to the DB: {e}"))
