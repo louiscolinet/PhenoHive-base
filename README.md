@@ -124,10 +124,10 @@ The steps below are for DietPi OS,
 but the [automated setup script](setup.sh) can be used on other Debian-based OS (e.g. Raspberry Pi OS).
 If you run into any trouble or if you are trying to install on another OS, the steps to set up the project manually are given in the [manual setup](#manual-setup) section.
 
-#### Using the pre-built image
+#### Using the preconfigured image
 
-1. Download the pre-built image from [here](placeholder) (placeholder, to be added).
-2. Flash the image on a microSD card using [Balena Etcher](https://www.balena.io/etcher/).
+1. Download the preconfigured image from [here](https://uclouvain-my.sharepoint.com/:u:/g/personal/dylan_goffinet_student_uclouvain_be/Eb_mK8L4GptGhppHbfrdEPoBmDWEppfjG-rZpERCGurvsw?e=2BCUSQ).
+2. Flash the image on a microSD card of at least 8Gb using [Balena Etcher](https://www.balena.io/etcher/).
 3. Insert the microSD card in the Raspberry Pi Zero W and power it on.
 4. Connect to the Raspberry Pi Zero W using a keyboard and a screen or via SSH (default login: root, password: phenohive).
    - The Raspberry Pi Zero W will automatically connect to the internet using the Wi-Fi network configured in [tools/dietpi/dietpi-wifi.txt](tools/dietpi/dietpi-wifi.txt) file
