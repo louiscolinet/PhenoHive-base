@@ -104,7 +104,7 @@ class PhenoHiveStation:
         self.url = str(self.parser["InfluxDB"]["url"])
 
         self.station_id = str(self.parser["Station"]["ID"])
-        self.image_path = str(self.parser["Paths"]["image_path"])
+        self.image_path = str(self.parser["Paths"]["image_folder"])
         self.csv_path = str(self.parser["Paths"]["csv_path"])
 
         self.pot_limit = int(self.parser["image_arg"]["pot_limit"])
