@@ -5,7 +5,7 @@
 # PhenoHive
 
 Low-cost Raspberry pi-based phenotyping station.
-Based on a [prototype](https://github.com/marty12342000/PhenoHive) by M. Lallemand and L. Lemaire
+Based on a [prototype](https://github.com/marty12342000/PhenoHive) by M. Lallemand and L. Lemaire
 
 ## Table of contents
 
@@ -41,7 +41,7 @@ The design is based on a Raspberry Pi Zero W running on DietPi OS with:
 The software is written in Python, with a [bash setup script](setup.sh) to set up the system.
 The Python code is divided in five files:
 - [main.py](main.py) is the main file, it initialises the system and handles the user interactions as well as the different pipelines.
-- [PhenoStation.py](PhenoStation.py) contains a singleton class that handles the hardware interactions. It contains the different variables and methods to take pictures, measure weight, and communicate with the database.
+- [PhenoHiveStation.py](PhenoHiveStation.py) contains a singleton class that handles the hardware interactions. It contains the different variables and methods to take pictures, measure weight, and communicate with the database.
 - [image_processing.py](image_processing.py) contains the different functions to analyse the plant images and compute its growth.
 - [show_display.py](show_display.py) contains the different functions to display the information on the LCD screen.
 - [utils.py](utils.py) contains two functions, one to set up the logger used by the system, and one to compute the growth of the plant.
@@ -56,7 +56,7 @@ the time interval between each measurement, etc. is set in [config.ini](config.i
 ### Initialisation
 
 Once the system has been set up (see [Installation](#installation) for more details), [main.py](main.py) will be run at startup.
-It will initialise the logger, instantiate the PhenoStation class, and start the main loop.
+It will initialise the logger, instantiate the PhenoHiveStation class, and start the main loop.
 At this point, it will display the main menu on the LCD screen and either:
 - Wait for the user to press "Start" to enter measurement mode or "Config" to configure enter the configuration menu.
 - Automatically start the measurement pipeline if the system unexpectedly shut down in measurement mode.
@@ -103,7 +103,7 @@ The different data sent to the database and saved in the CSV file are:
 
 The system logs are saved in [logs](logs) folder, with the time and date of the log as the filename. If the logging level is not given as argument when starting the station, the default level is DEBUG.
 
-When an error occurs, the system will register the error message and time using the `register_error` method of the PhenoStation class.
+When an error occurs, the system will register the error message and time using the `register_error` method of the PhenoHiveStation class.
 The error message will be logged, displayed on the LCD screen, and the status will be set to red.
 Critical steps, such as when collecting the weight or taking a picture, will be wrapped in a try/except block to catch any error and register it.
 However, unexpected errors can still occur. In this case, the system will try to catch and register the error, but if more than 10 unexpected errors are encountered, the system will raise a RuntimeError and restart (if the [phenohive.service](tools/phenohive.service) is set to restart on failure).
@@ -188,6 +188,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
     build-essential \
     cmake \
     gfortran \
+    pkg-config \
     git \
     python3 \
     python3-pip \
@@ -196,26 +197,35 @@ If you run into any trouble or if you are trying to install on another OS, the s
     libatlas-base-dev \
     patchelf \
     ninja-build \
+    libcap-dev \
+    ffmpeg \
     python3-dev \
     python3-smbus \
     python3-pil \
     python3-rpi.gpio \
+    python3-av \
+    python3-libcamera \
+    python3-kms++ \
+    python3-pyqt5 \
+    python3-prctl \
+    python3-numpy \
     python3-scipy \
     python3-sklearn \
-    python3-skimage
+    python3-skimage \
+    python3-statsmodels
    ```
 5. Install the necessary Python packages:
    ```bash
    pip3 install --break-system-packages --root-user-action=ignore --no-cache-dir \
-    "numpy>=1.22.0,<1.23" \
     configparser==7.0.0 \
     influxdb-client==1.44.0 \
     hx711==1.1.2.3 \
-    pandas==1.5.3 \
-    statsmodels \
+    pandas==1.5.1 \
     adafruit-gpio==1.0.3 \
     opencv-python==4.7.0.72 \
-    plantcv==3.14.3
+    plantcv==3.14.3 \
+    mizani==0.9.0 \
+    plotnine==0.10.1
    ```
 6. Download and install the ST7735 library:
    ```bash
@@ -235,7 +245,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
        ```ini
        [Unit]
        Description=PhenoHive station service
-       Documentation=https://github.com/Oldgram/PhenoHive/readme.md
+       Documentation=https://github.com/Oldgram/PhenoHive
        After=multi-user.target
        
        [Service]
@@ -269,7 +279,7 @@ If you run into any trouble or if you are trying to install on another OS, the s
    ```bash
    PS C:\Users\goffi> ipconfig /all
     [...]
-    Carte réseau sans fil Wi-Fi :
+    Carte réseau sans fil Wi-Fi :
     
         Suffixe DNS propre à la connexion. . . :
         Description. . . . . . . . . . . . . . : Killer(R) Wi-Fi 6 AX1650i 160MHz Wireless Network Adapter (201NGW)
@@ -278,10 +288,10 @@ If you run into any trouble or if you are trying to install on another OS, the s
         Configuration automatique activée. . . : Oui
         Adresse IPv6 de liaison locale. . . . .: fe80::4101:1239:213e:be14%2(préféré)
         Adresse IPv4. . . . . . . . . . . . . .: 192.168.166.174(préféré)
-        Masque de sous-réseau. . . . . . . . . : 255.255.255.0
-        Bail obtenu. . . . . . . . . . . . . . : samedi 17 juillet 2024 09:40:54
-        Bail expirant. . . . . . . . . . . . . : samedi 17 juillet 2024 10:40:52
-        Passerelle par défaut. . . . . . . . . : 192.168.166.254
+        Masque de sous-réseau. . . . . . . . . : 255.255.255.0
+        Bail obtenu. . . . . . . . . . . . . . : samedi 17 juillet 2024 09:40:54
+        Bail expirant. . . . . . . . . . . . . : samedi 17 juillet 2024 10:40:52
+        Passerelle par défaut. . . . . . . . . : 192.168.166.254
         Serveur DHCP . . . . . . . . . . . . . : 192.168.166.254
         IAID DHCPv6 . . . . . . . . . . . : 40937683
         DUID de client DHCPv6. . . . . . . . : 00-01-00-01-2A-30-89-94-08-8F-C3-64-23-E1
