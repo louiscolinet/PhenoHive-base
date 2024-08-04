@@ -9,7 +9,7 @@ class Display:
     def __init__(self, station) -> None:
         """
         Initialize the class variables
-        :param station: PhenoStation instance
+        :param station: PhenoHiveStation instance
         """
         self.STATION = station
         self.SCREEN = self.STATION.st7735
