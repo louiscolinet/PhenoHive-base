@@ -232,7 +232,7 @@ class PhenoHiveStation:
         self.measurements["error_time"] = self.last_error[0]
         self.measurements["error_message"] = str(self.last_error[1])
 
-    def get_weight(self, n=5) -> tuple[float, float]:
+    def get_weight(self, n: int = 5) -> tuple[float, float]:
         """
         Get the weight from the load cell (median of n measurements)
         :param n: the number of measurements to take (default = 5)
@@ -403,11 +403,11 @@ class DebugHx711(hx711.HX711):
     def __init__(self, dout_pin, pd_sck_pin):
         super().__init__(dout_pin, pd_sck_pin)
 
-    def _read(self, times=10):
+    def _read(self, times: int = 10):
         # Custom read function to debug (times=10 to reduce the time of the measurement)
         return super()._read(times)
 
-    def get_raw_data(self, times=5):
+    def get_raw_data(self, times: int = 5):
         # Modified read function to debug (with a max of 1000 tries) to avoid infinite loops.
         # Furthermore, we check if the data is valid (not False or -1) before appending it to the list
         data_list = []
