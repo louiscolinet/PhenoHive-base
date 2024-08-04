@@ -2,11 +2,11 @@ import datetime
 import logging
 
 
-def setup_logger(name: str, level: str) -> logging.Logger:
+def setup_logger(name: str, level: str | int) -> logging.Logger:
     """
     Function to set up the logger
     :param name: name of the logger
-    :param level: logging level, can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+    :param level: logging level, can be DEBUG (10), INFO (20), WARNING (30), ERROR (40), CRITICAL (50)
     :return: logger object
     """
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
