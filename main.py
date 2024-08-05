@@ -132,7 +132,7 @@ def handle_status_menu(station: PhenoHiveStation) -> bool:
 
 def handle_measurement_loop(station: PhenoHiveStation, n_round: int) -> None:
     """
-    Measurement loop, displa
+    Measurement loop, displays the measurement menu and handles the measurements cycles
     :param station: station object
     :param n_round: number of measurement rounds done
     """
