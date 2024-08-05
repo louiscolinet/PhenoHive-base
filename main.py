@@ -32,7 +32,7 @@ def main() -> None:
     while True:
         try:
             station.disp.show_menu()
-            handle_button_presses(station, running, n_round)
+            handle_main_menu(station, running, n_round)
         except Exception as e:
             error_count += 1
             station.register_error(exception=e)
@@ -44,7 +44,7 @@ def main() -> None:
                 time.sleep(5)
 
 
-def handle_button_presses(station: PhenoHiveStation, running: int, n_round: int) -> None:
+def handle_main_menu(station: PhenoHiveStation, running: int, n_round: int) -> None:
     """
     Function to handle the button presses in the main menu
     :param station: station object
@@ -76,14 +76,14 @@ def handle_configuration_menu(station: PhenoHiveStation) -> None:
             break
 
         if not GPIO.input(station.BUT_LEFT):
-            handle_calibration_loop(station)
+            handle_calibration_menu(station)
             time.sleep(1)
             break
 
 
 def handle_preview_loop(station: PhenoHiveStation) -> None:
     """
-    Preview loop
+    Preview loop: takes a preview photo and displays it on the screen to check the camera position
     :param station: station object
     """
     while True:
@@ -93,7 +93,7 @@ def handle_preview_loop(station: PhenoHiveStation) -> None:
             break
 
 
-def handle_calibration_loop(station: PhenoHiveStation) -> None:
+def handle_calibration_menu(station: PhenoHiveStation) -> None:
     """
     Calibration loop.
     This function takes the tare value and displays the current weight on the screen
@@ -112,7 +112,7 @@ def handle_calibration_loop(station: PhenoHiveStation) -> None:
             break
 
 
-def handle_status_loop(station: PhenoHiveStation) -> bool:
+def handle_status_menu(station: PhenoHiveStation) -> bool:
     """
     Status menu: display the current status of the station
     :param station: station object
@@ -132,7 +132,7 @@ def handle_status_loop(station: PhenoHiveStation) -> bool:
 
 def handle_measurement_loop(station: PhenoHiveStation, n_round: int) -> None:
     """
-    Measurement loop
+    Measurement loop, displa
     :param station: station object
     :param n_round: number of measurement rounds done
     """
@@ -165,7 +165,7 @@ def handle_measurement_loop(station: PhenoHiveStation, n_round: int) -> None:
             break
 
         if not GPIO.input(station.BUT_LEFT):
-            continue_measurements = handle_status_loop(station)
+            continue_measurements = handle_status_menu(station)
             if not continue_measurements:
                 # Stop the measurements
                 station.parser['Station']['running'] = "0"
