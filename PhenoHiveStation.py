@@ -68,7 +68,7 @@ class PhenoHiveStation:
     BUT_RIGHT = -1
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> 'PhenoHiveStation':
         """
         Static access method to create a new instance of the station if not already initialised.
         Otherwise, return the current instance.
