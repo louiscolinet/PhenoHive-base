@@ -18,6 +18,7 @@ from show_display import Display
 
 LOGGER = logging.getLogger("PhenoHiveStation")
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DATE_FORMAT_FILE = "%Y-%m-%dT%H-%M-%SZ"  # Date format for file names (no ':', which is not illegal in Windows)
 
 
 class PhenoHiveStation:
@@ -27,33 +28,6 @@ class PhenoHiveStation:
     """
     # Instance class variable for singleton
     __instance = None
-
-    # Station variables
-    parser = None
-    station_id = None
-    token = None
-    org = None
-    bucket = None
-    url = None
-    image_path = None
-    csv_path = None
-    pot_limit = None
-    channel = None
-    kernel_size = None
-    fill_size = None
-    cam = None  # picamera2
-    client = None
-    st7735 = None  # ST7735 display (device)
-    disp = None  # ST7735 display (object)
-    hx = None  # hx711 controller
-    time_interval = None
-    load_cell_cal = None
-    tare = None
-    connected = False  # True if the station is connected to influxDB
-    status = 0  # Current station status (-1 = Error, 0 = OK, 1 = Processing)
-    last_error = ("", None)  # Last error registered as a tuple of the form (timestamp: str, e:Exception)
-    measurements = {}  # Dictionnary to store the different measurements, sent to the database each cycle
-    to_save = []  # Measurements to save to the csv file
 
     # Station constants
     WIDTH = -1
@@ -102,6 +76,7 @@ class PhenoHiveStation:
         self.org = str(self.parser["InfluxDB"]["org"])
         self.bucket = str(self.parser["InfluxDB"]["bucket"])
         self.url = str(self.parser["InfluxDB"]["url"])
+        self.measurement = str(self.parser["InfluxDB"]["station_data"])
 
         self.station_id = str(self.parser["Station"]["ID"])
         self.image_path = str(self.parser["Paths"]["image_folder"])
@@ -116,6 +91,7 @@ class PhenoHiveStation:
 
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
+        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
         self.connected = self.client.ping()
         self.last_connection = datetime.now().strftime(DATE_FORMAT)
         LOGGER.debug(f"InfluxDB client initialised with url : {self.url}, org : {self.org} and token : {self.token}" +
@@ -171,7 +147,7 @@ class PhenoHiveStation:
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         # Initial (placeholder) measurements
-        self.measurements = {
+        self.data = {
             "status": self.status,  # current status
             "error_time": self.last_error[0],  # last registered error
             "error_message": str(self.last_error[1]),  # last registered error
@@ -182,6 +158,8 @@ class PhenoHiveStation:
             "picture": ""  # last picture as a base-64 string
         }
         self.to_save = ["growth", "weight", "weight_g", "standard_deviation"]
+
+        self.status = 0  # 0: idle, 1: measuring, -1: error
 
     def send_to_db(self) -> bool:
         """
@@ -203,21 +181,20 @@ class PhenoHiveStation:
             measurements_list.append(self.measurements[key])
         save_to_csv(measurements_list, "data/measurements.csv")
 
-        data = {
-            "measurement": f"StationID_{self.station_id}",
-            "tags": {"station_id": f"{self.station_id}"},
-            "time": timestamp,
-            "fields": self.measurements
-        }
-
-        if self.connected:
-            # Send data to the DB if the DB is reachable
-            write_api = self.client.write_api(write_options=SYNCHRONOUS)
-            LOGGER.debug(f"Sending data to the DB: {str(data)[:400]}")
-            write_api.write(bucket=self.bucket, org=self.org, record=data)
-            return True
-        else:
+        if not self.connected:
             return False
+
+        points = []
+        for field, value in self.data.items():
+            p = Point(self.measurement) \
+                .tag("station_id", self.id_station) \
+                .field(field, value)
+            points.append(p)
+
+        # Send data to the DB
+        LOGGER.debug(f"Sending data to the DB: {str(points)}")
+        self.write_api.write(bucket=self.bucket, org=self.org, record=points)
+        return True
 
     def register_error(self, exception: Exception) -> None:
         """
@@ -277,7 +254,7 @@ class PhenoHiveStation:
         self.cam.start()
         time.sleep(time_to_wait)
         if not preview:
-            name = datetime.now().strftime(DATE_FORMAT)
+            name = datetime.now().strftime(DATE_FORMAT_FiLE)
         else:
             name = "preview"
 
