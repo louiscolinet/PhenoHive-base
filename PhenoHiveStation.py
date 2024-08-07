@@ -9,13 +9,14 @@ import hx711
 import RPi.GPIO as GPIO
 import logging
 from datetime import datetime
-from influxdb_client import InfluxDBClient
+from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from picamera2 import Picamera2, Preview
 from image_processing import get_total_length
 from utils import save_to_csv
 from show_display import Display
 
+CONFIG_FILE = "config.ini"
 LOGGER = logging.getLogger("PhenoHiveStation")
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 DATE_FORMAT_FILE = "%Y-%m-%dT%H-%M-%SZ"  # Date format for file names (no ':', which is not illegal in Windows)
@@ -41,6 +42,25 @@ class PhenoHiveStation:
     BUT_LEFT = -1
     BUT_RIGHT = -1
 
+    # Station variables
+    parser = None
+    token = ""
+    org = ""
+    bucket = ""
+    url = ""
+    station_id = ""
+    image_path = ""
+    csv_path = ""
+    pot_limit = -1
+    channel = ""
+    kernel_size = -1
+    fill_size = -1
+    time_interval = -1
+    load_cell_cal = -1.0
+    tare = -1.0
+    status = -1
+    last_error = ("", "")
+
     @staticmethod
     def get_instance() -> 'PhenoHiveStation':
         """
@@ -65,29 +85,8 @@ class PhenoHiveStation:
             PhenoHiveStation.__instance = self
 
         # Parse Config.ini file
-        self.parser = configparser.ConfigParser()
-        try:
-            self.parser.read('config.ini')
-        except configparser.ParsingError as e:
-            LOGGER.error(f"Failed to parse config file {e}")
-            raise RuntimeError(f"Failed to parse config file {e}")
-
-        self.token = str(self.parser["InfluxDB"]["token"])
-        self.org = str(self.parser["InfluxDB"]["org"])
-        self.bucket = str(self.parser["InfluxDB"]["bucket"])
-        self.url = str(self.parser["InfluxDB"]["url"])
-        self.measurement = str(self.parser["InfluxDB"]["station_data"])
-
-        self.station_id = str(self.parser["Station"]["ID"])
-        self.image_path = str(self.parser["Paths"]["image_folder"])
-        self.csv_path = str(self.parser["Paths"]["csv_path"])
-
-        self.pot_limit = int(self.parser["image_arg"]["pot_limit"])
-        self.channel = str(self.parser["image_arg"]["channel"])
-        self.kernel_size = int(self.parser["image_arg"]["kernel_size"])
-        self.fill_size = int(self.parser["image_arg"]["fill_size"])
-
-        self.time_interval = int(self.parser["time_interval"]["time_interval"])
+        self.parse_config_file(CONFIG_FILE)
+        self.status = 0  # 0: idle, 1: measuring, -1: error
 
         # InfluxDB client initialization
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
@@ -99,13 +98,6 @@ class PhenoHiveStation:
 
         # Screen initialisation
         LOGGER.debug("Initialising screen")
-        self.WIDTH = int(self.parser["Display"]["width"])
-        self.HEIGHT = int(self.parser["Display"]["height"])
-        self.SPEED_HZ = int(self.parser["Display"]["speed_hz"])
-        self.DC = int(self.parser["Display"]["dc"])
-        self.RST = int(self.parser["Display"]["rst"])
-        self.SPI_PORT = int(self.parser["Display"]["spi_port"])
-        self.SPI_DEVICE = int(self.parser["Display"]["spi_device"])
         self.st7735 = TFT.ST7735(
             self.DC,
             rst=self.RST,
@@ -128,25 +120,17 @@ class PhenoHiveStation:
         else:
             LOGGER.debug("HX711 reset")
 
-        # Load cell calibration coefficient
-        self.load_cell_cal = float(self.parser["cal_coef"]["load_cell_cal"])
-        self.tare = float(self.parser["cal_coef"]["tare"])
-
         # Camera and LED init
         self.cam = Picamera2()
         GPIO.setwarnings(False)
-
-        self.LED = int(self.parser["Camera"]["led"])
         GPIO.setup(self.LED, GPIO.OUT)
         GPIO.output(self.LED, GPIO.HIGH)
 
         # Button init
-        self.BUT_LEFT = int(self.parser["Buttons"]["left"])
-        self.BUT_RIGHT = int(self.parser["Buttons"]["right"])
         GPIO.setup(self.BUT_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.BUT_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        # Initial (placeholder) measurements
+        # Initial (placeholder) measurement data
         self.data = {
             "status": self.status,  # current status
             "error_time": self.last_error[0],  # last registered error
@@ -159,7 +143,55 @@ class PhenoHiveStation:
         }
         self.to_save = ["growth", "weight", "weight_g", "standard_deviation"]
 
-        self.status = 0  # 0: idle, 1: measuring, -1: error
+    def parse_config_file(self, path: str) -> None:
+        """
+        Parse the config file at the given path and initialise the station's variables with the values
+        :param path: the path to the config file
+        :raises RuntimeError: If the config file could not be parsed
+        """
+        try:
+            self.parser.read(path)
+        except configparser.ParsingError as e:
+            LOGGER.error(f"Failed to parse config file: {type(e).__name__}: {e}")
+            raise RuntimeError(f"Failed to parse config file {e}")
+
+        self.token = str(self.parser["InfluxDB"]["token"])
+        self.org = str(self.parser["InfluxDB"]["org"])
+        self.bucket = str(self.parser["InfluxDB"]["bucket"])
+        self.url = str(self.parser["InfluxDB"]["url"])
+        self.station_id = str(self.parser["Station"]["ID"])
+        self.image_path = str(self.parser["Paths"]["image_folder"])
+        self.csv_path = str(self.parser["Paths"]["csv_path"])
+        self.pot_limit = int(self.parser["image_arg"]["pot_limit"])
+        self.channel = str(self.parser["image_arg"]["channel"])
+        self.kernel_size = int(self.parser["image_arg"]["kernel_size"])
+        self.fill_size = int(self.parser["image_arg"]["fill_size"])
+        self.time_interval = int(self.parser["time_interval"]["time_interval"])
+        self.WIDTH = int(self.parser["Display"]["width"])
+        self.HEIGHT = int(self.parser["Display"]["height"])
+        self.SPEED_HZ = int(self.parser["Display"]["speed_hz"])
+        self.DC = int(self.parser["Display"]["dc"])
+        self.RST = int(self.parser["Display"]["rst"])
+        self.SPI_PORT = int(self.parser["Display"]["spi_port"])
+        self.SPI_DEVICE = int(self.parser["Display"]["spi_device"])
+        self.load_cell_cal = float(self.parser["cal_coef"]["load_cell_cal"])
+        self.tare = float(self.parser["cal_coef"]["tare"])
+        self.LED = int(self.parser["Camera"]["led"])
+        self.BUT_LEFT = int(self.parser["Buttons"]["left"])
+        self.BUT_RIGHT = int(self.parser["Buttons"]["right"])
+
+    def register_error(self, exception: Exception) -> None:
+        """
+        Register an exception by logging it, updating the station's status and sending it to the DB
+        :param exception: The exception that occurred
+        """
+        LOGGER.error(f"{type(exception).__name__}: {exception}")
+        timestamp = datetime.now().strftime(DATE_FORMAT)
+        self.status = -1
+        self.last_error = (timestamp, exception)
+        self.data["status"] = self.status
+        self.data["error_time"] = self.last_error[0]
+        self.data["error_message"] = str(self.last_error[1])
 
     def send_to_db(self) -> bool:
         """
@@ -178,7 +210,7 @@ class PhenoHiveStation:
         # Save data to the corresponding csv file
         measurements_list = [timestamp]
         for key in self.to_save:
-            measurements_list.append(self.measurements[key])
+            measurements_list.append(self.data[key])
         save_to_csv(measurements_list, "data/measurements.csv")
 
         if not self.connected:
@@ -186,28 +218,13 @@ class PhenoHiveStation:
 
         points = []
         for field, value in self.data.items():
-            p = Point(self.measurement) \
-                .tag("station_id", self.id_station) \
-                .field(field, value)
+            p = Point(f"station_{self.station_id}").field(field, value)
             points.append(p)
 
         # Send data to the DB
         LOGGER.debug(f"Sending data to the DB: {str(points)}")
         self.write_api.write(bucket=self.bucket, org=self.org, record=points)
         return True
-
-    def register_error(self, exception: Exception) -> None:
-        """
-        Register an exception by logging it, updating the station's status and sending it to the DB
-        :param exception: The exception that occurred
-        """
-        LOGGER.error(f"{type(exception)}: {exception}")
-        timestamp = datetime.now().strftime(DATE_FORMAT)
-        self.status = -1
-        self.last_error = (timestamp, exception)
-        self.measurements["status"] = self.status
-        self.measurements["error_time"] = self.last_error[0]
-        self.measurements["error_message"] = str(self.last_error[1])
 
     def get_weight(self, n: int = 5) -> tuple[float, float]:
         """
@@ -254,7 +271,7 @@ class PhenoHiveStation:
         self.cam.start()
         time.sleep(time_to_wait)
         if not preview:
-            name = datetime.now().strftime(DATE_FORMAT_FiLE)
+            name = datetime.now().strftime(DATE_FORMAT_FILE)
         else:
             name = "preview"
 
@@ -282,8 +299,8 @@ class PhenoHiveStation:
         try:
             self.disp.show_collecting_data("Taking photo")
             pic, growth_value = self.picture_pipeline()
-            self.measurements["picture"] = pic
-            self.measurements["growth"] = growth_value
+            self.data["picture"] = pic
+            self.data["growth"] = growth_value
         except Exception as e:
             self.register_error(type(e)(f"Error while taking the photo: {e}"))
             self.disp.show_collecting_data("Error while taking the photo")
@@ -293,9 +310,9 @@ class PhenoHiveStation:
         # Get weight
         try:
             weight, std_dev = self.weight_pipeline()
-            self.measurements["weight"] = weight
-            self.measurements["weight_g"] = weight * self.load_cell_cal
-            self.measurements["standard_deviation"] = std_dev
+            self.data["weight"] = weight
+            self.data["weight_g"] = weight * self.load_cell_cal
+            self.data["standard_deviation"] = std_dev
 
             # Measurement finished, display the weight
             self.disp.show_collecting_data(f"Weight : {round(weight, 2)}")
