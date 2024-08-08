@@ -96,18 +96,28 @@ def handle_preview_loop(station: PhenoHiveStation) -> None:
 def handle_calibration_menu(station: PhenoHiveStation) -> None:
     """
     Calibration loop.
-    This function takes the tare value and displays the current weight on the screen
+    This function takes the tare value and compute the calibration coefficient when the left button is pressed
     :param station: station object
     """
     station.tare = station.get_weight(20)[0]
     station.parser['cal_coef']["tare"] = str(station.tare)
     with open(CONFIG_FILE, 'w') as configfile:
         station.parser.write(configfile)
-    weight = 0
+    raw_weight = 0
+    weight_g = 0
     while True:
-        station.disp.show_cal_menu(weight, station.tare)
+        station.disp.show_cal_menu(raw_weight, weight_g, station.tare)
         if not GPIO.input(station.BUT_LEFT):
-            weight = station.get_weight()[0]
+            # Compute the calibration coefficient
+            raw_weight = station.get_weight()[0]
+            reference_weight = station.parser['cal_coef']["calibration_weight"]
+            load_cell_cal = reference_weight / (raw_weight - station.tare)
+            # Save the calibration coefficient in the config file
+            station.parser['cal_coef']["load_cell_cal"] = str(load_cell_cal)
+            with open("config.ini", 'w') as configfile:
+                station.parser.write(configfile)
+            weight_g = (raw_weight - station.tare) * load_cell_cal
+            time.sleep(1)
         if not GPIO.input(station.BUT_RIGHT):
             break
 

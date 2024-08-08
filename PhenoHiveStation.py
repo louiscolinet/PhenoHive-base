@@ -226,10 +226,10 @@ class PhenoHiveStation:
         self.write_api.write(bucket=self.bucket, org=self.org, record=points)
         return True
 
-    def get_weight(self, n: int = 5) -> tuple[float, float]:
+    def get_weight(self, n: int = 15) -> tuple[float, float]:
         """
         Get the weight from the load cell (median of n measurements)
-        :param n: the number of measurements to take (default = 5)
+        :param n: the number of measurements to take (default = 15)
         :return: The median of the measurements (-1 in case of error) and the observed standard deviation
         """
         measurements = self.hx.get_raw_data(times=n)
