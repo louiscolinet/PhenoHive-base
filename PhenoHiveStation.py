@@ -84,6 +84,8 @@ class PhenoHiveStation:
         else:
             PhenoHiveStation.__instance = self
 
+        self.parser = configparser.ConfigParser()
+
         # Parse Config.ini file
         self.parse_config_file(CONFIG_FILE)
         self.status = 0  # 0: idle, 1: measuring, -1: error
