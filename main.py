@@ -10,6 +10,7 @@ import RPi.GPIO as GPIO
 import argparse
 import configparser
 import logging
+import cv2
 
 CONFIG_FILE = "config.ini"
 LOGGER = None
