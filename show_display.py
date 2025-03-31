@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+import cv2
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LOGO = "assets/logo_phenohive.jpg"
@@ -95,6 +96,7 @@ class Display:
         draw.text((80, 130), "Stop -->", font=font, fill=(0, 0, 0))
 
         self.SCREEN.display(img)
+        cv2.imwrite("menu/mesuring.jpg", img)
 
     def show_menu(self) -> None:
         """
@@ -109,6 +111,7 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Config        Start -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
+        cv2.imwrite("menu/main_menu.jpg", img)
 
     def show_cal_prev_menu(self) -> None:
         """
@@ -122,6 +125,7 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Calib           Prev -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
+        cv2.imwrite("menu/cal_prev_menu.jpg", img)
 
     def show_cal_menu(self, raw_weight, weight_g, tare) -> None:
         """
@@ -141,6 +145,7 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Get Calib    Back -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
+        cv2.imwrite("menu/cal_menu.jpg", img)
 
     def show_collecting_data(self, action):
         """
@@ -155,6 +160,7 @@ class Display:
             font = ImageFont.truetype(FONT, 8)
             draw.text((5, 100), action, font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
+        cv2.imwrite("menu/collecting_data.jpg", img)
 
     def show_status(self) -> None:
         """
@@ -180,3 +186,4 @@ class Display:
         font = ImageFont.truetype(FONT, 10)
         draw.text((0, 130), "<-- Stop       Resume -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
+        cv2.imwrite("menu/status.jpg", img)
