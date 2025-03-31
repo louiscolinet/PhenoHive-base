@@ -98,7 +98,7 @@ class Display:
 
         self.SCREEN.display(img)
         img_np = np.array(img)
-        cv2.imwrite("menu/mesuring.jpg", img)
+        cv2.imwrite("menu/mesuring.jpg", img_np)
 
     def show_menu(self) -> None:
         """
@@ -114,7 +114,7 @@ class Display:
         draw.text((0, 130), "<-- Config        Start -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
         img_np = np.array(img)
-        cv2.imwrite("menu/main_menu.jpg", img)
+        cv2.imwrite("menu/main_menu.jpg", img_np)
 
     def show_cal_prev_menu(self) -> None:
         """
@@ -129,7 +129,7 @@ class Display:
         draw.text((0, 130), "<-- Calib           Prev -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
         img_np = np.array(img)
-        cv2.imwrite("menu/cal_prev_menu.jpg", img)
+        cv2.imwrite("menu/cal_prev_menu.jpg", img_np)
 
     def show_cal_menu(self, raw_weight, weight_g, tare) -> None:
         """
@@ -150,7 +150,7 @@ class Display:
         draw.text((0, 130), "<-- Get Calib    Back -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
         img_np = np.array(img)
-        cv2.imwrite("menu/cal_menu.jpg", img)
+        cv2.imwrite("menu/cal_menu.jpg", img_np)
 
     def show_collecting_data(self, action):
         """
@@ -166,7 +166,7 @@ class Display:
             draw.text((5, 100), action, font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
         img_np = np.array(img)
-        cv2.imwrite("menu/collecting_data.jpg", img)
+        cv2.imwrite("menu/collecting_data.jpg", img_np)
 
     def show_status(self) -> None:
         """
@@ -193,4 +193,4 @@ class Display:
         draw.text((0, 130), "<-- Stop       Resume -->", font=font, fill=(0, 0, 0))
         self.SCREEN.display(img)
         img_np = np.array(img)
-        cv2.imwrite("menu/status.jpg", img)
+        cv2.imwrite("menu/status.jpg", img_np)
