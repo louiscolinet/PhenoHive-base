@@ -111,7 +111,7 @@ def handle_calibration_menu(station: PhenoHiveStation) -> None:
             # Compute the calibration coefficient
             raw_weight = station.get_weight()[0]
             reference_weight = station.parser['cal_coef']["calibration_weight"]
-            load_cell_cal = reference_weight / (raw_weight - station.tare)
+            load_cell_cal = int(reference_weight) / (raw_weight - station.tare)
             # Save the calibration coefficient in the config file
             station.parser['cal_coef']["load_cell_cal"] = str(load_cell_cal)
             with open("config.ini", 'w') as configfile:
