@@ -11,6 +11,7 @@ import argparse
 import configparser
 import logging
 import cv2
+import numpy as np
 
 CONFIG_FILE = "config.ini"
 LOGGER = None
