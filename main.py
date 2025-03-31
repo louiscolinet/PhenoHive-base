@@ -91,8 +91,6 @@ def handle_preview_loop(station: PhenoHiveStation) -> None:
     while True:
         path_img = station.save_photo(preview=True, time_to_wait=1)
         station.disp.show_image(path_img)
-        img_np = np.array(img)
-        cv2.imwrite("menu/preview.jpg", path_img)
         if not GPIO.input(station.BUT_RIGHT):
             break
 
