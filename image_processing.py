@@ -29,7 +29,7 @@ def get_height_pix(image_path: str, pot_limit: int, channel: str = 'k', kernel_s
 
     k = pcv.rgb2gray_cmyk(rgb_img=img, channel=channel)
     k_mblur = pcv.median_blur(k, kernel_size)
-    cv2.imwrite(path, date)
+    %cv2.imwrite(path, date)
 
     edges = pcv.canny_edge_detect(k_mblur, sigma=2)
     edges_crop = pcv.crop(edges, 5, 5, height - pot_limit - 10, width - 10)
